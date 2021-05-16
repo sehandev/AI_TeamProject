@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  dev:
+    image: pytorchlightning/pytorch_lightning:base-cuda-py3.8-torch1.8
+    ports:
+      - "8801:8888"
+    volumes:
+      - .:/workspace
+    environment:
+      - TZ=Asis/Seoul
+      - DEBIAN_FRONTEND=noninteractive
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    stdin_open: true
