@@ -1,10 +1,13 @@
-from torch import nn, load
+import torch
+from torch import nn
+import torchvision.transforms as transforms
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 MODEL_PATHES = {
-    'resnet50' : 'model/resnet50.pth',
-    'resnet101' : 'model/resnet101.pth',
-    'resnet152' : 'model/resnet152.pth',
+    'resnet50' : '/workspace/model/resnet50.pth',
+    'resnet101' : '/workspace/model/resnet101.pth',
+    'resnet152' : '/workspace/model/resnet152.pth',
 }
 
 NUM_LAYERS = {
@@ -18,6 +21,9 @@ CLASS_IDS = {
     'jaguar' : 'n02128925',
     'cheetah' : 'n02130308',
 }
+
+CLASS_NAME_LIST = list(CLASS_IDS.keys())
+CLASS_ID_LIST = list(CLASS_IDS.values())
 
 
 def conv3x3(in_channels, out_channels, stride):
@@ -46,8 +52,8 @@ def conv1x1(in_channels, out_channels, stride):
     )
 
 def load_model(model_name, model):
-  state_dict = load(MODEL_PATHES[model_name])
-  model.load_state_dict(state_dict)
+  state_dict = torch.load(MODEL_PATHES[model_name])
+  model.load_state_dict(state_dict, strict=False)
   model.eval()
 
 def save_model(model_name, model):
@@ -55,3 +61,22 @@ def save_model(model_name, model):
 
 def get_class_id(class_name):
     return CLASS_IDS[class_name]
+
+def early_stopping():
+    return EarlyStopping(
+        monitor='val_acc',  # 기준으로 삼을 metric
+        patience=5,  # epoch 몇 번동안 성능이 향상되지 않으면 stop할지
+        verbose=True,  # 출력 yer or no
+        mode='max'  # monitor 값이 max or min 중 어디로 향해야 하는지
+    )
+
+def get_preprocess_function():
+  preprocess = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    transforms.Normalize((0.485,), (0.225,)),
+  ])
+
+  return preprocess

@@ -1,14 +1,17 @@
 version: "3.9"
 services:
-  dev:
-    image: pytorchlightning/pytorch_lightning:base-cuda-py3.8-torch1.8
+  pt:
+    build: .
     ports:
-      - "8801:8888"
+      - 8003:8888
+      - 8265:8265
     volumes:
       - .:/workspace
+      - ../ray_result:/root/ray_results
     environment:
       - TZ=Asis/Seoul
       - DEBIAN_FRONTEND=noninteractive
+    shm_size: "32gb"
     deploy:
       resources:
         reservations:

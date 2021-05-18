@@ -1,23 +1,30 @@
+import os
+
 import torch
 from torch import nn
-from torchvision.models.utils import load_state_dict_from_url
+from torch.nn import functional as F
+import pytorch_lightning as pl
+from pytorch_lightning.metrics import functional as FM
 
 # Custom
 from helper import conv1x1, load_model, NUM_LAYERS
-from bottleneck import Bottleneck
+from config import LEARNING_RATE, MOMENTUM, WEIGHT_DECAY
+from bottleneck_pl import Bottleneck
 
 
 
-class ResNet(nn.Module):
+class ResNet(pl.LightningModule):
 
     def __init__(
         self,
         num_layer_list,
         num_class,
+        learning_rate,
     ):
         super(ResNet, self).__init__()
 
         self.in_channels = 64
+        self.lr = learning_rate
 
         self.conv1 = nn.Conv2d(3, self.in_channels, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(self.in_channels)
@@ -31,12 +38,15 @@ class ResNet(nn.Module):
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # max pooling
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # avarage pooling
-        self.fc = nn.Linear(512 * 4, num_class)  # fully connected
+        # self.fc = nn.Linear(512 * 4, 1000)  # fully connected
+        # self.fc1 = nn.Linear(1000, num_class)  # fully connected
+        self.fc_out = nn.Linear(512 * 4, num_class)  # fully connected
+        self.loss = F.cross_entropy
 
         for module in self.modules():
             # print(module)
             if isinstance(module, nn.Conv2d):
-                # Init with reference [13] normal distribution
+                # Init with reference [batch_size3] normal distribution
                 nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(module, nn.BatchNorm2d):
                 # Init weight, bias
@@ -66,38 +76,70 @@ class ResNet(nn.Module):
         return nn.Sequential(*layer_list)
 
     def forward(self, x):
-        # x : [1, 3, 224, 224]
+        # x : [batch_size, 3, 224, 224]
 
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        # out : [1, 64, 112, 112]
+        # out : [batch_size, 64, 112, 112]
 
         out = self.maxpool(out)
-        # out : [1, 64, 56, 56]
+        # out : [batch_size, 64, 56, 56]
 
         out = self.layer1(out)
-        # out : [1, 256, 56, 56]
+        # out : [batch_size, 256, 56, 56]
         out = self.layer2(out)
-        # out : [1, 512, 28, 28]
+        # out : [batch_size, 512, 28, 28]
         out = self.layer3(out)
-        # out : [1, 1024, 14, 14]
+        # out : [batch_size, 1024, 14, 14]
         out = self.layer4(out)
-        # out : [1, 2048, 7, 7]
+        # out : [batch_size, 2048, 7, 7]
 
         out = self.avgpool(out)
-        # out : [1, 2048, 1, 1]
+        # out : [batch_size, 2048, 1, 1]
 
-        out = torch.flatten(out)
-        # out : [2048]
+        out = torch.flatten(out, 1)
+        # out : [batch_size, 2048]
 
-        out = self.fc(out)
-        # out : [num_class]
+        # out = self.fc(out)
+        # out : [batch_size, 1000]
+
+        # out = self.fc1(out)
+        # out : [1000, num_class]
+
+        out = self.fc_out(out)
+        # out : [batch_size, num_class]
 
         return out
 
-def _resnet(model_name, num_class, is_pretrained):
-    model = ResNet(NUM_LAYERS[model_name], num_class)
+    def training_step(self, batch, batch_nb):
+        x, y = batch
+        y_hat = self(x)
+        y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
+        acc = FM.accuracy(y_hat, y)
+
+        metrics = {'val_acc': acc, 'val_loss': loss}
+        self.log_dict(metrics)
+        return metrics
+
+    def test_step(self, batch, batch_idx):
+        metrics = self.validation_step(batch, batch_idx)
+        metrics = {'test_acc': metrics['val_acc'], 'test_loss': metrics['val_loss']}
+        self.log_dict(metrics)
+
+    def configure_optimizers(self):
+        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+
+def _resnet(model_name, num_class, is_pretrained, learning_rate):
+    model = ResNet(NUM_LAYERS[model_name], num_class, learning_rate)
     if is_pretrained:
         load_model(model_name, model)
     return model
