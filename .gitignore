@@ -131,3 +131,5 @@ dmypy.json
 /.idea
 /train
 /model
+data/
+lightning_logs/

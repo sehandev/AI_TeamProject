@@ -35,7 +35,7 @@ def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epo
     pl.seed_everything(tune_config['seed'])
 
     # model = _resnet(model_name, config.NUM_CLASS, True, tune_config['lr'])
-    model = LSTM(224, 1000, 4, 3)
+    model = LSTM(224, 1000, 3, 3)
 
     dm = CustomImagenetDataModule(batch_size=tune_config["batch_size"])
 
