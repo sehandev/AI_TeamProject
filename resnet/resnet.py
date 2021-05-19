@@ -12,7 +12,6 @@ from config import LEARNING_RATE, MOMENTUM, WEIGHT_DECAY
 from bottleneck_pl import Bottleneck
 
 
-
 class ResNet(pl.LightningModule):
 
     def __init__(
@@ -108,7 +107,7 @@ class ResNet(pl.LightningModule):
         # out : [1000, num_class]
 
         out = self.fc_out(out)
-        # out : [batch_size, num_class]
+        # out : [batch_size, 3]
 
         return out
 
