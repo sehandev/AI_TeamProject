@@ -8,15 +8,20 @@ from torch.utils.data.dataset import random_split
 import numpy as np
 
 from helper import get_preprocess_function, CLASS_ID_LIST
-from config import DATA_PATH, ALL_DATA_LEN, TEST_DATA_LEN, BATCH_SIZE, NUM_WORKERS
+from config import DATA_PATH, TRAIN_DATA_LEN, TEST_DATA_LEN, BATCH_SIZE, NUM_WORKERS
 
 class CustomImagenetDataset(Dataset):
     def __init__(self, train):
+        self.train = train
         if train:
-            self.idx_start = 0
-            self.length = (ALL_DATA_LEN - TEST_DATA_LEN) * 3
+            # want   : 0 ~ 1199, 1200 ~ 2399, 2400 ~ 3599
+            # actual : 0 ~ 1199, 1300 ~ 2499, 2600 ~ 3799
+            self.idx_gap = TEST_DATA_LEN
+            self.length = TRAIN_DATA_LEN * 3
         else:
-            self.idx_start = ALL_DATA_LEN - TEST_DATA_LEN
+            # want   : 0 ~ 99, 100 ~ 199, 200 ~ 299
+            # actual : 1200 ~ 1299, 2500 ~ 2599, 3800 ~ 3899
+            self.idx_gap = TRAIN_DATA_LEN
             self.length = TEST_DATA_LEN * 3
 
         self.data_path = DATA_PATH
@@ -27,12 +32,13 @@ class CustomImagenetDataset(Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        idx += self.idx_start
+        if self.train:
+            label = idx // TRAIN_DATA_LEN
+        else:
+            label = idx // TEST_DATA_LEN
 
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        label = idx // 1300
+        idx += (self.idx_gap * label)
+        
         img_index = f'{idx % 1300}.JPEG'
         class_id = self.class_id_list[label]
         img_path = os.path.join(self.data_path, class_id, img_index)

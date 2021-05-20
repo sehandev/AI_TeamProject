@@ -18,7 +18,7 @@ from LSTM.LSTM import LSTM
 def open_image(class_name, index):
   class_id = get_class_id(class_name)
   file_name = f'{index}.JPEG'
-  file_path = os.path.join("data", class_id, file_name)
+  file_path = os.path.join('data', class_id, file_name)
 
   input_image = Image.open(file_path)
 
@@ -31,17 +31,28 @@ def debug_model(model):
 def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epochs=20):
   pl.seed_everything(tune_config['seed'])
 
-  # model = _resnet(model_name, config.NUM_CLASS, True, tune_config['lr'])
-  model = LSTM(224, 1000, 1, 3)
+  if model_name in ['resnet50', 'resnet101', 'resnet152']:
+    model = _resnet(model_name, config.NUM_CLASS, True, tune_config['lr'])
+  elif model_name is 'RNN':
+    model = LSTM(224, 1000, 1, 3)
+  elif model_name is 'VGG':
+    print('Not yet VGG')
+    return
+  elif model_name is 'GoogLeNet':
+    print('Not yet GoogLeNet')
+    return
+  else:
+    print('ERROR : No implemented model')
+    return  
 
-  dm = CustomImagenetDataModule(batch_size=tune_config["batch_size"])
+  dm = CustomImagenetDataModule(batch_size=tune_config['batch_size'])
 
-  metrics = {"loss": "val_loss", "acc": "val_acc"}
+  metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
 
   # training
   trainer_args = {
     'callbacks' : [
-      TuneReportCallback(metrics, on="validation_end"),
+      TuneReportCallback(metrics, on='validation_end'),
       early_stopping(),
     ],
     'gpus' : config.NUM_GPUS,
@@ -55,9 +66,9 @@ def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epo
 
 def run_tune(model_name):
   tune_config = {
-    "seed": tune.randint(0, 1000),
-    "lr": 3e-4,
-    "batch_size": 10,
+    'seed': tune.randint(0, 1000),
+    'lr': 3e-4,
+    'batch_size': 10,
   }
 
   trainable = tune.with_parameters(
@@ -69,14 +80,14 @@ def run_tune(model_name):
   analysis = tune.run(
     trainable,
     resources_per_trial={
-      "cpu": config.NUM_CPUS,
-      "gpu": config.NUM_GPUS,
+      'cpu': config.NUM_CPUS,
+      'gpu': config.NUM_GPUS,
     },
-    metric="loss",
-    mode="min",
+    metric='loss',
+    mode='min',
     config=tune_config,
     num_samples=config.NUM_SAMPLES,
-    name="tune_resnet",
+    name=f'tune_{model_name}',
     # resume=True,
   )
 
@@ -85,11 +96,23 @@ def run_tune(model_name):
 def main(model_name, is_pretrained, class_name, index):
   pl.seed_everything(config.SEED)
 
-  model = _resnet(model_name, config.NUM_CLASS, True, config.LEARNING_RATE)
+  if model_name in ['resnet50', 'resnet101', 'resnet152']:
+    model = _resnet(model_name, config.NUM_CLASS, True, config.LEARNING_RATE)
+  elif model_name is 'RNN':
+    model = LSTM(224, 1000, 1, 3)
+  elif model_name is 'VGG':
+    print('Not yet VGG')
+    return
+  elif model_name is 'GoogLeNet':
+    print('Not yet GoogLeNet')
+    return
+  else:
+    print('ERROR : No implemented model')
+    return  
 
   dm = CustomImagenetDataModule(batch_size=config.BATCH_SIZE)
 
-  metrics = {"loss": "val_loss", "acc": "val_acc"}
+  metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
 
   # training
   trainer_args = {
@@ -105,15 +128,35 @@ def main(model_name, is_pretrained, class_name, index):
   trainer.test()
 
   # Save model
-  # trainer.save_checkpoint("best_model.ckpt")
-  # new_model = _resnet(model_name, config.NUM_CLASS, True, config.LEARNING_RATE)
-  # resnet_model = new_model.load_from_checkpoint(
-  #   checkpoint_path="best_model.ckpt",
-  #   num_layer_list=NUM_LAYERS[model_name],
-  #   num_class=config.NUM_CLASS,
-  #   learning_rate=config.LEARNING_RATE,
-  # )
-  resnet_model = model
+  trainer.save_checkpoint(f'best_{model_name}.ckpt')
+  
+  test_model(model_name, class_name, index)
+
+def test_model(model_name, class_name, index):
+  if model_name in ['resnet50', 'resnet101', 'resnet152']:
+    model = ResNet.load_from_checkpoint(
+      checkpoint_path=f'./model/best_{model_name}.ckpt',
+      num_layer_list=NUM_LAYERS[model_name],
+      num_class=config.NUM_CLASS,
+      learning_rate=0,
+    )
+  elif model_name is 'RNN':
+    model = LSTM.load_from_checkpoint(
+      checkpoint_path=f'./model/best_{model_name}.ckpt',
+      input_dim=224,
+      hidden_dim=1000,
+      layer_dim=1,
+      output_dim=3,
+    )
+  elif model_name is 'VGG':
+    print('Not yet VGG')
+    return
+  elif model_name is 'GoogLeNet':
+    print('Not yet GoogLeNet')
+    return
+  else:
+    print('ERROR : No implemented model')
+    return  
 
   # Test image
   input_image = open_image(class_name, index)
@@ -125,10 +168,10 @@ def main(model_name, is_pretrained, class_name, index):
   # GPU
   if torch.cuda.is_available():
     input_batch = input_batch.to('cuda')
-    resnet_model.to('cuda')
+    model.to('cuda')
 
   with torch.no_grad():
-    output = resnet_model(input_batch)  # [num_class]
+    output = model(input_batch)  # [num_class]
 
   # Calculate probability_array
   probability_array = torch.nn.functional.softmax(output, dim=1)  # [num_class]
@@ -145,19 +188,11 @@ def main(model_name, is_pretrained, class_name, index):
     print(f'{class_name:<10} : {probability:6.3f}%')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   class_name = 'jaguar'
   index = 10
 
-  tune_config = {
-    "seed": 0,
-    "lr": 3e-4,
-    "batch_size": 1,
-  }
-
-#   print(f' [ Predict {class_name} - {index} ]')
+  print(f' [ Predict {class_name} - {index} ]')
   # main('resnet50', True, class_name, index)
-  # main('resnet101', True, class_name, index)
-  # main('resnet152', True, class_name, index)
   # run_tune('resnet50')
-  train_model(tune_config)
+  run_tune('resnet50')
