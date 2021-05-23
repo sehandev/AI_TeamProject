@@ -1,12 +1,6 @@
-import torch
-from torch import nn
-from torch.nn import functional as F
-import pytorch_lightning as pl
-from pytorch_lightning.metrics import functional as FM
-
-class LSTM(pl.LightningModule):
-    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim):
-        super(LSTM, self).__init__()
+class LSTMModel(pl.LightningModule):
+    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, learning_rate):
+        super(LSTMModel, self).__init__()
         # Hidden dimensions
         self.hidden_dim = hidden_dim
 
@@ -21,23 +15,23 @@ class LSTM(pl.LightningModule):
         # Readout layer
         self.fc = nn.Linear(hidden_dim, output_dim)
 
-        self.lr = 1e-4
+        self.lr = learning_rate
         self.loss = F.cross_entropy
         if torch.cuda.is_available():
             pass
-        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def forward(self, x):
+        x = x.squeeze()  # [10, 224, 224] [batch_size, input_size, input_size]
+        if x.shape[0] < 3:  # batch_size == 1이면 다시 늘려줌
+          x = x.unsqueeze(0)
+
         # Initialize hidden state with zeros
-        h0 = torch.zeros(self.layer_dim, 3, self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
+        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
 
         # Initialize cell state
-        c0 = torch.zeros(self.layer_dim, 3, self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
+        c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
 
-        # 28 time steps
-        # We need to detach as we are doing truncated backpropagation through time (BPTT)
-        # If we don't, we'll backprop all the way to the start even after going through another batch
-        x = x.squeeze()  # [3, 224, 224]
+        # One time step
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
 
         # Index hidden state of last time step
@@ -75,4 +69,4 @@ class LSTM(pl.LightningModule):
         self.log_dict(metrics)
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=0.9, weight_decay=0.0001)
+        return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)
