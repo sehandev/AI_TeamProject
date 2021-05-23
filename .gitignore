@@ -128,4 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-.idea/
+/.idea
+/train
+/model
+data/
+lightning_logs/
