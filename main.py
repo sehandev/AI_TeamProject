@@ -145,7 +145,7 @@ def test_model(model_name, class_name, index):
       checkpoint_path=f'./model/best_{model_name}.ckpt',
       input_dim=224,
       hidden_dim=1000,
-      layer_dim=1,
+      layer_dim=10,
       output_dim=3,
     )
   elif model_name == 'VGG':
