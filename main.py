@@ -1,40 +1,41 @@
 import os
 
 import torch
+from torch.utils.data import DataLoader
+from torch.utils.data.dataset import random_split
 from PIL import Image
 from torchvision import transforms
 import pytorch_lightning as pl
-import ray
 from ray import tune
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
 
 # Custom
-from custom_dataset import CustomImagenetDataModule
-from helper import get_class_id, save_model, early_stopping, get_preprocess_function, CLASS_NAME_LIST, NUM_LAYERS
+from custom_dataset import CustomImagenetDataModule, CustomImagenetDataset
 import config
+import helper
 
+# Model
+from resnet.resnet import _resnet, ResNet, get_resnet_layer
 from LSTM.LSTM import LSTMModel
 
-def open_image(class_name, index):
-  class_id = get_class_id(class_name)
+def open_image(class_name, index, preprocess):
+  class_id = helper.get_class_id(class_name)
   file_name = f'{index}.JPEG'
-  file_path = os.path.join('data', class_id, file_name)
+  file_path = os.path.join('test_data', class_id, file_name)
 
-  input_image = Image.open(file_path)
+  image = Image.open(file_path)
+  image = preprocess(image)
 
-  return input_image
+  if len(image) == 1:
+      image = torch.cat((image, image, image), dim=0)
 
-def debug_model(model):
-  for m in model.modules():
-      print(m)
+  return image
 
-def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epochs=20):
-  pl.seed_everything(tune_config['seed'])
-
+def get_model(model_name, model_config):
   if model_name in ['resnet50', 'resnet101', 'resnet152']:
-    model = _resnet(model_name, config.NUM_CLASS, True, tune_config['lr'])
-  elif model_name == 'RNN':
-    model = LSTMModel(224, 1000, 1, 3, tune_config['lr'])
+    model = _resnet(model_name, model_config['lr'])
+  elif model_name in ['RNN', 'LSTM', 'GRU']:
+    model = LSTMModel(224, 1000, 10, 3, model_config['lr'])
   elif model_name == 'VGG':
     print('Not yet VGG')
     return
@@ -43,38 +44,55 @@ def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epo
     return
   else:
     print('ERROR : No implemented model')
-    return  
+    return
 
-  dm = CustomImagenetDataModule(batch_size=tune_config['batch_size'])
+  return model
+
+def fit_model(train_config, model_name, model, is_tune=False):
+  pl.seed_everything(train_config['seed'])
+
+  data_module = CustomImagenetDataModule(
+    batch_size=train_config['batch_size'],
+    model_name=model_name,
+  )
 
   metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
 
+  callback_list = [
+    helper.early_stopping()
+  ]
+
+  if is_tune:
+    callback_list.append(TuneReportCallback(metrics, on='validation_end'))
+
   # training
   trainer_args = {
-    'callbacks' : [
-      TuneReportCallback(metrics, on='validation_end'),
-      early_stopping(),
-    ],
+    'callbacks' : callback_list,
     'gpus' : config.NUM_GPUS,
-    'max_epochs' : num_epochs,
-    'progress_bar_refresh_rate' : 0,
+    'max_epochs' : train_config['num_epochs'],
+    'progress_bar_refresh_rate' : 100,
   }
 
   trainer = pl.Trainer(**trainer_args)
 
-  trainer.fit(model, dm)
+  trainer.fit(model, data_module)
+
+def tune_model(tune_config, checkpoint_dir=None, model_name=None):
+  model = get_model(model_name, tune_config)
+  
+  fit_model(tune_config, model_name, model, is_tune=True)
 
 def run_tune(model_name):
   tune_config = {
-    'seed': tune.randint(0, 1000),  # a, b 사이의 정수
-    'lr': tune.uniform(1e-4, 1e-5), # a, b 사이의 소수
+    'seed': tune.randint(0, 1000),
+    'lr': 3e-4,
     'batch_size': 10,
+    'num_epochs': 20,
   }
 
   trainable = tune.with_parameters(
-    train_model,
+    tune_model,
     model_name=model_name,
-    num_epochs=config.EPOCHS,
   )
 
   analysis = tune.run(
@@ -93,60 +111,51 @@ def run_tune(model_name):
 
   print(analysis.best_config)
 
-def main(model_name, is_pretrained, class_name, index):
+def train_model(model_name):
   pl.seed_everything(config.SEED)
 
-  if model_name in ['resnet50', 'resnet101', 'resnet152']:
-    model = _resnet(model_name, config.NUM_CLASS, True, config.LEARNING_RATE)
-  elif model_name == 'RNN':
-    model = LSTMModel(224, 1000, 1, 3, config.LEARNING_RATE)
-  elif model_name == 'VGG':
-    print('Not yet VGG')
-    return
-  elif model_name == 'GoogLeNet':
-    print('Not yet GoogLeNet')
-    return
-  else:
-    print('ERROR : No implemented model')
-    return  
+  model_config = {
+    'lr' : config.LEARNING_RATE,
+  }
+  model = get_model(model_name, model_config)
 
-  dm = CustomImagenetDataModule(batch_size=config.BATCH_SIZE)
-
-  metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
+  data_module = CustomImagenetDataModule(
+    batch_size=config.BATCH_SIZE,
+    model_name=model_name,
+  )
 
   # training
   trainer_args = {
+    'callbacks' : [
+      helper.early_stopping(),
+      helper.get_checkpoint_callback(model_name),
+    ],
     'gpus' : config.NUM_GPUS,
     'max_epochs' : config.EPOCHS,
     # 'progress_bar_refresh_rate' : 0,
   }
 
   trainer = pl.Trainer(**trainer_args)
-  trainer.fit(model, dm)
-
-  # Test the model with the best weights
-  trainer.test()
+  trainer.fit(model, data_module)
 
   # Save model
-  trainer.save_checkpoint(f'best_{model_name}.ckpt')
-  
-  test_model(model_name, class_name, index)
+  trainer.save_checkpoint(helper.get_best_checkpoint_path(model_name))
 
-def test_model(model_name, class_name, index):
+def test_model(model_name):
   if model_name in ['resnet50', 'resnet101', 'resnet152']:
     model = ResNet.load_from_checkpoint(
-      checkpoint_path=f'./model/best_{model_name}.ckpt',
-      num_layer_list=NUM_LAYERS[model_name],
-      num_class=config.NUM_CLASS,
+      checkpoint_path=helper.get_best_checkpoint_path(model_name),
+      num_layer_list=get_resnet_layer(model_name),
       learning_rate=0,
     )
-  elif model_name == 'RNN':
+  elif model_name in ['RNN', 'LSTM', 'GRU']:
     model = LSTMModel.load_from_checkpoint(
-      checkpoint_path=f'./model/best_{model_name}.ckpt',
+      checkpoint_path=helper.get_best_checkpoint_path(model_name),
       input_dim=224,
       hidden_dim=1000,
       layer_dim=10,
       output_dim=3,
+      learning_rate=0,
     )
   elif model_name == 'VGG':
     print('Not yet VGG')
@@ -156,43 +165,50 @@ def test_model(model_name, class_name, index):
     return
   else:
     print('ERROR : No implemented model')
-    return  
+    return
 
-  # Test image
-  input_image = open_image(class_name, index)
+  print(f'SUCCESS : load model {model_name} from checkpoint')
 
-  preprocess = get_preprocess_function()
-  input_tensor = preprocess(input_image)  # [3, 224, 224]
-  input_batch = input_tensor.unsqueeze(0)  # [1, 3, 224, 224]
-  
-  # GPU
-  if torch.cuda.is_available():
-    input_batch = input_batch.to('cuda')
-    model.to('cuda')
+  preprocess = helper.get_preprocess_function(model_name, is_crop=True)
 
-  with torch.no_grad():
-    output = model(input_batch)  # [num_class]
+  correct_count = 0
+  for class_name in ['cheetah', 'jaguar', 'leopard']:
+    class_count = 0
+    for index in range(100):
 
-  # Calculate probability_array
-  probability_array = torch.nn.functional.softmax(output, dim=1)  # [num_class]
-    
-  # Select top k from probability array
-  K = 3
-  print(f'\n [ {model_name} Top {K} ]')
-  topk_array, topk_category_index = torch.topk(probability_array, K)
-  topk_array = topk_array[0]
-  topk_category_index = topk_category_index[0]
-  for i in range(len(topk_array)):
-    class_name = CLASS_NAME_LIST[topk_category_index[i]]
-    probability = topk_array[i].item() * 100
-    print(f'{class_name:<10} : {probability:6.3f}%')
+      # Test image
+      input_tensor = open_image(class_name, index, preprocess)
+      input_batch = input_tensor.unsqueeze(0)  # [1, 3, 224, 224]
+      
+      # GPU
+      if torch.cuda.is_available():
+        input_batch = input_batch.to('cuda')
+        model.to('cuda')
+
+      with torch.no_grad():
+        output = model(input_batch)  # [1, num_class]
+      output = output.squeeze(0)  # [num_class]
+      top1_index = torch.argmax(output)
+      
+      if helper.CLASS_NAME_LIST[top1_index] == class_name:
+        correct_count += 1
+        class_count += 1
+
+      # Select top k from probability array
+      # K = 3
+      # print(f'\n [ {model_name} Top {K} ]')
+      # topk_array, topk_category_index = torch.topk(output, K)
+      # for i in range(len(topk_array)):
+      #   class_name = CLASS_NAME_LIST[topk_category_index[i]]
+      #   probability = topk_array[i].item() * 100
+      #   print(f'{class_name:<10} : {probability:6.3f}%')
+    print(f'Finish {class_name} - {class_count}%')
+  print(f'\nAcc : {correct_count / 3 : .3f}%')
 
 
 if __name__ == '__main__':
-  class_name = 'jaguar'
-  index = 10
+  model_name = 'RNN'
+  # train_model(model_name)  # model을 config.py의 설정으로 1번 학습하기
+  # run_tune(model_name)  # hyper-parameter tuning
 
-  print(f' [ Predict {class_name} - {index} ]')
-  # main('resnet50', True, class_name, index)
-  # run_tune('resnet50')
-  run_tune('RNN')
+  test_model(model_name)  # test data 300개로 정확도 확인 

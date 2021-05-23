@@ -1,7 +1,7 @@
 from torch import nn
 
 # Custom
-from helper import conv1x1, conv3x3
+from .helper import conv1x1, conv3x3
 
 
 class Bottleneck(nn.Module):

@@ -7,9 +7,9 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 # Custom
-from helper import conv1x1, load_model, NUM_LAYERS
-from config import LEARNING_RATE, MOMENTUM, WEIGHT_DECAY
-from bottleneck_pl import Bottleneck
+import resnet.config as config
+import resnet.helper as helper
+from resnet.bottleneck_pl import Bottleneck
 
 
 class ResNet(pl.LightningModule):
@@ -17,7 +17,6 @@ class ResNet(pl.LightningModule):
     def __init__(
         self,
         num_layer_list,
-        num_class,
         learning_rate,
     ):
         super(ResNet, self).__init__()
@@ -38,14 +37,13 @@ class ResNet(pl.LightningModule):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # max pooling
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # avarage pooling
         # self.fc = nn.Linear(512 * 4, 1000)  # fully connected
-        # self.fc1 = nn.Linear(1000, num_class)  # fully connected
-        self.fc_out = nn.Linear(512 * 4, num_class)  # fully connected
+        # self.fc1 = nn.Linear(1000, 3)  # fully connected
+        self.fc_out = nn.Linear(512 * 4, 3)  # fully connected
         self.loss = F.cross_entropy
 
         for module in self.modules():
-            # print(module)
             if isinstance(module, nn.Conv2d):
-                # Init with reference [batch_size3] normal distribution
+                # Init with reference [3] normal distribution
                 nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(module, nn.BatchNorm2d):
                 # Init weight, bias
@@ -56,7 +54,7 @@ class ResNet(pl.LightningModule):
 
         # Set downsample
         downsample = nn.Sequential(
-            conv1x1(self.in_channels, channels * 4, stride),
+            helper.conv1x1(self.in_channels, channels * 4, stride),
             nn.BatchNorm2d(channels * 4),
         )
 
@@ -104,7 +102,7 @@ class ResNet(pl.LightningModule):
         # out : [batch_size, 1000]
 
         # out = self.fc1(out)
-        # out : [1000, num_class]
+        # out : [1000, 3]
 
         out = self.fc_out(out)
         # out : [batch_size, 3]
@@ -135,10 +133,12 @@ class ResNet(pl.LightningModule):
         self.log_dict(metrics)
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
 
-def _resnet(model_name, num_class, is_pretrained, learning_rate):
-    model = ResNet(NUM_LAYERS[model_name], num_class, learning_rate)
-    if is_pretrained:
-        load_model(model_name, model)
+def get_resnet_layer(model_name):
+    return helper.NUM_LAYERS[model_name]
+
+def _resnet(model_name, learning_rate):
+    model = ResNet(get_resnet_layer(model_name), learning_rate)
+    model = helper.load_model(model_name, model)
     return model
