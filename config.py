@@ -1,7 +1,7 @@
 import os
 
 SEED = 414
-NUM_CPUS = 4
+NUM_CPUS = 1
 NUM_GPUS = 1
 NUM_CLASS = 3
 BATCH_SIZE = 10

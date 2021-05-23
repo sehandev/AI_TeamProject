@@ -10,17 +10,16 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 # Custom
 import config
 
-
 MODEL_PATHES = {
-    'resnet50' : '/workspace/model/resnet50.pth',
-    'resnet101' : '/workspace/model/resnet101.pth',
-    'resnet152' : '/workspace/model/resnet152.pth',
+    'resnet50': '/workspace/model/resnet50.pth',
+    'resnet101': '/workspace/model/resnet101.pth',
+    'resnet152': '/workspace/model/resnet152.pth',
 }
 
 CLASS_IDS = {
-    'leopard' : 'n02128385',
-    'jaguar' : 'n02128925',
-    'cheetah' : 'n02130308',
+    'leopard': 'n02128385',
+    'jaguar': 'n02128925',
+    'cheetah': 'n02130308',
 }
 
 CLASS_NAME_LIST = list(CLASS_IDS.keys())
@@ -29,6 +28,7 @@ CLASS_ID_LIST = list(CLASS_IDS.values())
 
 def get_class_id(class_name):
     return CLASS_IDS[class_name]
+
 
 def early_stopping():
     return EarlyStopping(

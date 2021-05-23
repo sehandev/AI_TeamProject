@@ -13,6 +13,7 @@ import config
 from helper import get_preprocess_function, CLASS_ID_LIST
 
 
+
 class CustomImagenetDataset(Dataset):
     def __init__(self, train, model_name):
         self.train = train
@@ -48,6 +49,7 @@ class CustomImagenetDataset(Dataset):
         
         return (image, label)
 
+
 class CustomImagenetDataModule(pl.LightningDataModule):
     def __init__(self, batch_size, model_name):
         super().__init__()
@@ -56,7 +58,7 @@ class CustomImagenetDataModule(pl.LightningDataModule):
     
     def prepare_data(self):
         pass
-    
+
     def setup(self, stage=None):
         dataset = CustomImagenetDataset(train=True, model_name=self.model_name)
         self.train_dataset, self.val_dataset = random_split(dataset, [3300, 300])

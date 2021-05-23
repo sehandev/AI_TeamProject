@@ -29,8 +29,8 @@ class LSTMModel(pl.LightningModule):
 
     def forward(self, x):
         x = x.squeeze()  # [10, 224, 224] [batch_size, input_size, input_size]
-        if x.shape[0] < 3:  # batch_size == 1이면 다시 늘려줌
-          x = x.unsqueeze(0)
+        if len(list(x.size())) < 3:  # batch_size == 1이면 다시 늘려줌
+            x = x.unsqueeze(0)
 
         # Initialize hidden state with zeros
         h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
