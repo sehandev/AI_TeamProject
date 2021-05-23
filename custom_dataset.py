@@ -7,12 +7,12 @@ from torch.utils.data.dataset import random_split
 
 import numpy as np
 
-from helper import get_preprocess_function, CLASS_ID_LIST
+from helper import get_preprocess_function, get_preprocess_function_RNN, CLASS_ID_LIST
 from config import DATA_PATH, TRAIN_DATA_LEN, TEST_DATA_LEN, BATCH_SIZE, NUM_WORKERS
 
 
 class CustomImagenetDataset(Dataset):
-    def __init__(self, train):
+    def __init__(self, train, isRNN):
         self.train = train
         if train:
             # want   : 0 ~ 1199, 1200 ~ 2399, 2400 ~ 3599
@@ -27,7 +27,10 @@ class CustomImagenetDataset(Dataset):
 
         self.data_path = DATA_PATH
         self.class_id_list = CLASS_ID_LIST
-        self.transform = get_preprocess_function()
+        if isRNN:
+            self.transform = get_preprocess_function_RNN()
+        else:
+            self.transform = get_preprocess_function()
 
     def __len__(self):
         return self.length
@@ -50,17 +53,18 @@ class CustomImagenetDataset(Dataset):
 
 
 class CustomImagenetDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size):
+    def __init__(self, batch_size, isRNN):
         super().__init__()
         self.batch_size = batch_size
+        self.isRNN = isRNN
 
     def prepare_data(self):
         pass
 
     def setup(self, stage=None):
-        dataset = CustomImagenetDataset(train=True)
+        dataset = CustomImagenetDataset(train=True, isRNN=self.isRNN)
         self.train_dataset, self.val_dataset = random_split(dataset, [3300, 300])
-        self.test_dataset = CustomImagenetDataset(train=False)
+        self.test_dataset = CustomImagenetDataset(train=False, isRNN=self.isRNN)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=NUM_WORKERS)

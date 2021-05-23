@@ -16,6 +16,8 @@ import config
 from resnet.resnet import _resnet, ResNet
 from LSTM.LSTM import LSTMModel
 
+ray.init(include_dashboard=False)
+
 
 def open_image(class_name, index):
     class_id = get_class_id(class_name)
@@ -49,7 +51,10 @@ def train_model(tune_config, checkpoint_dir=None, model_name='resnet50', num_epo
         print('ERROR : No implemented model')
         return
 
-    dm = CustomImagenetDataModule(batch_size=tune_config['batch_size'])
+    if model_name == 'RNN':
+        dm = CustomImagenetDataModule(batch_size=tune_config['batch_size'], isRNN=True)
+    else:
+        dm = CustomImagenetDataModule(batch_size=tune_config['batch_size'], isRNN=False)
 
     metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
 
@@ -116,7 +121,10 @@ def main(model_name, is_pretrained, class_name, index):
         print('ERROR : No implemented model')
         return
 
-    dm = CustomImagenetDataModule(batch_size=config.BATCH_SIZE)
+    if model_name == 'RNN':
+        dm = CustomImagenetDataModule(batch_size=config.BATCH_SIZE, isRNN=True)
+    else:
+        dm = CustomImagenetDataModule(batch_size=config.BATCH_SIZE, isRNN=False)
 
     metrics = {'loss': 'val_loss', 'acc': 'val_acc'}
 
@@ -206,7 +214,7 @@ if __name__ == '__main__':
 
     # print(f' [ Predict {class_name} - {index} ]')
     # main('resnet50', True, class_name, index)
-    main('RNN', True, class_name, index)
+    # main('RNN', True, class_name, index)
     # run_tune('resnet50')
-    # run_tune('RNN')
+    run_tune('RNN')
     # test_model('RNN', class_name, index)
