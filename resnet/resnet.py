@@ -9,16 +9,16 @@ from pytorch_lightning.metrics import functional as FM
 # Custom
 from helper import conv1x1, load_model, NUM_LAYERS
 from config import LEARNING_RATE, MOMENTUM, WEIGHT_DECAY
-from bottleneck_pl import Bottleneck
+from resnet.bottleneck_pl import Bottleneck
 
 
 class ResNet(pl.LightningModule):
 
     def __init__(
-        self,
-        num_layer_list,
-        num_class,
-        learning_rate,
+            self,
+            num_layer_list,
+            num_class,
+            learning_rate,
     ):
         super(ResNet, self).__init__()
 
@@ -67,7 +67,7 @@ class ResNet(pl.LightningModule):
 
         # Update in_channels
         self.in_channels = channels * 4
-        
+
         # Append blocks
         for _ in range(1, num_block):
             layer_list.append(Bottleneck(self.in_channels, channels, 1, None))
@@ -136,6 +136,7 @@ class ResNet(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+
 
 def _resnet(model_name, num_class, is_pretrained, learning_rate):
     model = ResNet(NUM_LAYERS[model_name], num_class, learning_rate)

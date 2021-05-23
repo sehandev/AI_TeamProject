@@ -5,19 +5,19 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 
-class LSTMModel(pl.LightningModule):
+class GRUModel(pl.LightningModule):
     def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, learning_rate):
-        super(LSTMModel, self).__init__()
+        super(GRUModel, self).__init__()
         # Hidden dimensions
         self.hidden_dim = hidden_dim
 
         # Number of hidden layers
         self.layer_dim = layer_dim
 
-        # Building your LSTM
+        # Building your GRU
         # batch_first=True causes input/output tensors to be of shape
         # (batch_dim, seq_dim, feature_dim)
-        self.lstm = nn.LSTM(input_dim, hidden_dim, layer_dim, batch_first=True)
+        self.gru = nn.GRU(input_dim, hidden_dim, layer_dim, batch_first=True)
 
         # Readout layer
         self.fc = nn.Linear(hidden_dim, output_dim)
@@ -30,7 +30,7 @@ class LSTMModel(pl.LightningModule):
     def forward(self, x):
         x = x.squeeze()  # [10, 224, 224] [batch_size, input_size, input_size]
         if x.shape[0] < 3:  # batch_size == 1이면 다시 늘려줌
-          x = x.unsqueeze(0)
+            x = x.unsqueeze(0)
 
         # Initialize hidden state with zeros
         h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
@@ -39,7 +39,7 @@ class LSTMModel(pl.LightningModule):
         c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
 
         # One time step
-        out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
+        out, (hn, cn) = self.gru(x, (h0.detach(), c0.detach()))
 
         # Index hidden state of last time step
         # out.size() --> 100, 28, 100

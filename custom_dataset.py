@@ -10,6 +10,7 @@ import numpy as np
 from helper import get_preprocess_function, CLASS_ID_LIST
 from config import DATA_PATH, TRAIN_DATA_LEN, TEST_DATA_LEN, BATCH_SIZE, NUM_WORKERS
 
+
 class CustomImagenetDataset(Dataset):
     def __init__(self, train):
         self.train = train
@@ -38,7 +39,7 @@ class CustomImagenetDataset(Dataset):
             label = idx // TEST_DATA_LEN
 
         idx += (self.idx_gap * label)
-        
+
         img_index = f'{idx % 1300}.JPEG'
         class_id = self.class_id_list[label]
         img_path = os.path.join(self.data_path, class_id, img_index)
@@ -47,17 +48,18 @@ class CustomImagenetDataset(Dataset):
 
         if len(image) == 1:
             image = torch.cat((image, image, image), dim=0)
-        
+
         return (image, label)
+
 
 class CustomImagenetDataModule(pl.LightningDataModule):
     def __init__(self, batch_size):
         super().__init__()
         self.batch_size = batch_size
-    
+
     def prepare_data(self):
         pass
-    
+
     def setup(self, stage=None):
         dataset = CustomImagenetDataset(train=True)
         self.train_dataset, self.val_dataset = random_split(dataset, [3300, 300])
