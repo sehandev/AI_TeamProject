@@ -10,6 +10,7 @@ import numpy as np
 from helper import get_preprocess_function, CLASS_ID_LIST
 from config import DATA_PATH, ALL_DATA_LEN, TEST_DATA_LEN, BATCH_SIZE, NUM_WORKERS
 
+
 class CustomImagenetDataset(Dataset):
     def __init__(self, train):
         if train:
@@ -39,19 +40,20 @@ class CustomImagenetDataset(Dataset):
         image = Image.open(img_path)
         image = self.transform(image)
 
-        if len(image) == 1:
-            image = torch.cat((image, image, image), dim=0)
-        
+        # if len(image) == 1:
+        #     image = torch.cat((image, image, image), dim=0)
+
         return (image, label)
+
 
 class CustomImagenetDataModule(pl.LightningDataModule):
     def __init__(self, batch_size):
         super().__init__()
         self.batch_size = batch_size
-    
+
     def prepare_data(self):
         pass
-    
+
     def setup(self, stage=None):
         dataset = CustomImagenetDataset(train=True)
         self.train_dataset, self.val_dataset = random_split(dataset, [3300, 300])

@@ -154,6 +154,7 @@ def test_model(model_name, class_name, index):
             hidden_dim=1000,
             layer_dim=10,
             output_dim=3,
+            learning_rate=0,
         )
     elif model_name == 'VGG':
         print('Not yet VGG')
@@ -165,28 +166,24 @@ def test_model(model_name, class_name, index):
         print('ERROR : No implemented model')
         return
 
-        # Test image
+    # Test image
     input_image = open_image(class_name, index)
 
-    preprocess = get_preprocess_function()
+    if model_name == 'RNN':
+        preprocess = get_preprocess_function_RNN()
+    else:
+        preprocess = get_preprocess_function()
+
     input_tensor = preprocess(input_image)  # [3, 224, 224]
     input_batch = input_tensor.unsqueeze(0)  # [1, 3, 224, 224]
-
-    preprocess_RNN = get_preprocess_function_RNN()
-    input_tensor_RNN = preprocess_RNN(input_image)  # [1, 224, 224]
-    input_batch_RNN = input_tensor_RNN.unsqueeze(0) # [1, 1, 224, 224]
 
     # GPU
     if torch.cuda.is_available():
         input_batch = input_batch.to('cuda')
-        input_batch_RNN = input_batch_RNN.to('cuda')
         model.to('cuda')
 
     with torch.no_grad():
-        if model_name == 'RNN':
-            output = model(input_batch_RNN)
-        else:
-            output = model(input_batch)  # [num_class]
+        output = model(input_batch)  # [num_class]
 
     # Calculate probability_array
     probability_array = torch.nn.functional.softmax(output, dim=1)  # [num_class]
@@ -209,5 +206,7 @@ if __name__ == '__main__':
 
     # print(f' [ Predict {class_name} - {index} ]')
     # main('resnet50', True, class_name, index)
+    main('RNN', True, class_name, index)
     # run_tune('resnet50')
-    run_tune('RNN')
+    # run_tune('RNN')
+    # test_model('RNN', class_name, index)

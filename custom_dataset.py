@@ -46,9 +46,6 @@ class CustomImagenetDataset(Dataset):
         image = Image.open(img_path)
         image = self.transform(image)
 
-        if len(image) == 1:
-            image = torch.cat((image, image, image), dim=0)
-
         return (image, label)
 
 
