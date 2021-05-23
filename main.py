@@ -16,7 +16,7 @@ import config
 from resnet.resnet import _resnet, ResNet
 from LSTM.LSTM import LSTMModel
 
-ray.init(include_dashboard=False)
+# ray.init(include_dashboard=False)
 
 
 def open_image(class_name, index):
