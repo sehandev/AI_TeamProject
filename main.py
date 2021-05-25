@@ -18,6 +18,7 @@ import helper
 from resnet.resnet import _resnet, ResNet, get_resnet_layer
 from LSTM.LSTM import LSTMModel
 from GRU.GRU import GRUModel
+from VGGNet.VGGNet import VGGNet
 
 
 def open_image(class_name, index, preprocess):
@@ -42,7 +43,7 @@ def get_model(model_name, model_config):
     elif model_name == 'GRU':
         model = GRUModel(224, 1000, 10, 3, model_config['lr'])
     elif model_name == 'VGG':
-        print('Not yet VGG')
+        model = VGGNet(16, 3, 64, 3, model_config['lr'])
         return
     elif model_name == 'GoogLeNet':
         print('Not yet GoogLeNet')
@@ -177,8 +178,13 @@ def test_model(model_name):
           learning_rate=0,
         )
     elif model_name == 'VGG':
-        print('Not yet VGG')
-        return
+        model = VGGNet.load_from_checkpoint(
+          checkpoint_path=get_best_checkpoint_path(model_name),
+          input_size=224,
+          output_size=10,
+          num_classes=3,
+          learning_rate=0,
+        )
     elif model_name == 'GoogLeNet':
         print('Not yet GoogLeNet')
         return
