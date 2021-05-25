@@ -135,19 +135,12 @@ class ResNet(pl.LightningModule):
     def configure_optimizers(self):
         return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
 
-<<<<<<< HEAD
+
 def get_resnet_layer(model_name):
     return helper.NUM_LAYERS[model_name]
+
 
 def _resnet(model_name, learning_rate):
     model = ResNet(get_resnet_layer(model_name), learning_rate)
     model = helper.load_model(model_name, model)
     return model
-=======
-
-def _resnet(model_name, num_class, is_pretrained, learning_rate):
-    model = ResNet(NUM_LAYERS[model_name], num_class, learning_rate)
-    if is_pretrained:
-        load_model(model_name, model)
-    return model
->>>>>>> c297d6abec927527f830305bfc85bd3e10e46edf

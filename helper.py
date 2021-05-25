@@ -38,13 +38,13 @@ def early_stopping():
         mode='min'  # monitor 값이 max or min 중 어디로 향해야 하는지
     )
 
-def get_preprocess_function(model_name, is_crop=True):
 
+def get_preprocess_function(model_name, is_crop=True):
     if is_crop:
         crop_size = 224
     else:
         crop_size = 256
-    
+
     if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGG', 'GoogLeNet']:
         preprocess = transforms.Compose([
             transforms.Resize((256, 256)),
@@ -71,12 +71,15 @@ def get_preprocess_function(model_name, is_crop=True):
 
     return preprocess
 
+
 def get_best_checkpoint_path(model_name):
     checkpoint_dir = ''
     if model_name in ['resnet50', 'resnet101', 'resnet152']:
         checkpoint_dir = './resnet/model'
-    elif model_name in ['RNN', 'LSTM', 'GRU']:
+    elif model_name in ['RNN', 'LSTM']:
         checkpoint_dir = './LSTM/model'
+    elif model_name == 'GRU':
+        checkpoint_dir = './GRU/model'
     elif model_name == 'VGG':
         print('Not yet VGG')
         return
@@ -89,19 +92,20 @@ def get_best_checkpoint_path(model_name):
 
     return f'{checkpoint_dir}/best_{model_name}.ckpt'
 
+
 def get_checkpoint_callback(model_name):
-  # checkpoint : project_path/model/[model name]-epoch=02-val_loss=0.32.ckpt
+    # checkpoint : project_path/model/[model name]-epoch=02-val_loss=0.32.ckpt
 
-  checkpoint_dir = os.path.join(config.PROJECT_PATH, 'checkpoint', model_name)
-  checkpoint_file_name = model_name + '-{epoch:02d}-{val_loss:.2f}'
+    checkpoint_dir = os.path.join(config.PROJECT_PATH, 'checkpoint', model_name)
+    checkpoint_file_name = model_name + '-{epoch:02d}-{val_loss:.2f}'
 
-  checkpoint_callback = ModelCheckpoint(
-      dirpath=checkpoint_dir,
-      filename=checkpoint_file_name,
-      monitor='val_loss',
-      mode='min',
-      save_top_k=1,
-      save_weights_only=True,
-  )
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=checkpoint_dir,
+        filename=checkpoint_file_name,
+        monitor='val_loss',
+        mode='min',
+        save_top_k=1,
+        save_weights_only=True,
+    )
 
-  return checkpoint_callback
+    return checkpoint_callback

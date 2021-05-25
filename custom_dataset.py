@@ -13,7 +13,6 @@ import config
 from helper import get_preprocess_function, CLASS_ID_LIST
 
 
-
 class CustomImagenetDataset(Dataset):
     def __init__(self, train, model_name):
         self.train = train
@@ -37,7 +36,7 @@ class CustomImagenetDataset(Dataset):
 
     def __getitem__(self, idx):
         label = idx // self.length
-        
+
         img_index = f'{idx % self.length}.JPEG'
         class_id = CLASS_ID_LIST[label]
         img_path = os.path.join(self.data_path, class_id, img_index)
@@ -46,7 +45,7 @@ class CustomImagenetDataset(Dataset):
 
         if self.model_name not in ['RNN', 'LSTM', 'GRU'] and len(image) == 1:
             image = torch.cat((image, image, image), dim=0)
-        
+
         return (image, label)
 
 
@@ -55,7 +54,7 @@ class CustomImagenetDataModule(pl.LightningDataModule):
         super().__init__()
         self.batch_size = batch_size
         self.model_name = model_name
-    
+
     def prepare_data(self):
         pass
 
@@ -72,6 +71,7 @@ class CustomImagenetDataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS)
+
 
 if __name__ == '__main__':
     dataset = CustomImagenetDataset(train=True)
