@@ -46,8 +46,7 @@ def get_model(model_name, model_config):
     elif model_name == 'VGGNet':
         model = VGGNet(16, 3, 64, 3, model_config['lr'])
     elif model_name == 'GoogLeNet':
-        model = googlenet()
-        return
+        model = googlenet(model_config['lr'])
     else:
         print('ERROR : No implemented model')
         return
@@ -187,8 +186,13 @@ def test_model(model_name):
           learning_rate=0,
         )
     elif model_name == 'GoogLeNet':
-        print('Not yet GoogLeNet')
-        return
+        model = googlenet.load_from_checkpoint(
+          checkpoint_path=get_best_checkpoint_path(model_name),
+          input_size=224,
+          output_size=10,
+          num_classes=3,
+          learning_rate=0,
+        )
     else:
         print('ERROR : No implemented model')
         return
@@ -234,8 +238,8 @@ def test_model(model_name):
 
 if __name__ == '__main__':
     # LSTM, GRU, resnet50, VGGNet, GoogLeNet
-    model_name = 'GRU'
+    model_name = 'GoogLeNet'
     train_model(model_name)  # model을 config.py의 설정으로 1번 학습하기
-    # run_tune(model_name)  # hyper-parameter tuning
+    #run_tune(model_name)  # hyper-parameter tuning
 
-    # test_model(model_name)  # test data 300개로 정확도 확인
+    #test_model(model_name)  # test data 300개로 정확도 확인

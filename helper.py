@@ -59,9 +59,6 @@ def get_preprocess_function(model_name, is_crop=True):
             transforms.Grayscale(1),
             transforms.ToTensor(),
         ])
-    elif model_name == 'GoogLeNet':
-        print('Not yet GoogLeNet')
-        return
     else:
         print('ERROR : No implemented model')
         return
@@ -80,8 +77,7 @@ def get_best_checkpoint_path(model_name):
     elif model_name == 'VGGNet':
         checkpoint_dir = './VGGNet/model'
     elif model_name == 'GoogLeNet':
-        print('Not yet GoogLeNet')
-        return
+        checkpoint_dir = './GoogleNet/model'
     else:
         print('ERROR : No implemented model')
         return

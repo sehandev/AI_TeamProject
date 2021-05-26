@@ -21,8 +21,8 @@ GoogLeNetOutputs.__annotations__ = {'logits': Tensor, 'aux_logits2': Optional[Te
 _GoogLeNetOutputs = GoogLeNetOutputs
 
 
-def googlenet():
-    model = GoogLeNet()
+def googlenet(learning_rate):
+    model = GoogLeNet(learning_rate)
     model.load_state_dict(torch.load('./googlenet-1378be20.pth'), strict=False)
     model.aux_logits = False
 
@@ -57,10 +57,11 @@ def googlenet():
     model.aux2.fc3.bias.data[0] = fc_aux2_biases[288]
     model.aux2.fc3.bias.data[1] = fc_aux2_biases[290]
     model.aux2.fc3.bias.data[2] = fc_aux2_biases[293]
+
     return model
 
 class GoogLeNet(pl.LightningModule):
-    def __init__(self) :
+    def __init__(self, learning_rate) :
         super(GoogLeNet, self).__init__()
 
         conv_block = BasicConv2d
@@ -97,6 +98,9 @@ class GoogLeNet(pl.LightningModule):
         self.dropout = nn.Dropout(0.2)
         self.fc = nn.Linear(1024, 1000)
         self.fc3 = nn.Linear(1024, 3)
+
+        self.lr = learning_rate
+        self.loss = F.cross_entropy
 
 
     def _transform_input(self, x: Tensor) -> Tensor:
@@ -276,7 +280,7 @@ class InceptionAux(nn.Module):
         self.fc2 = nn.Linear(1024, 1000)  # original
         self.fc3 = nn.Linear(1024, 3)  # copied
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor):
         # aux1: N x 512 x 14 x 14, aux2: N x 528 x 14 x 14
         x = F.adaptive_avg_pool2d(x, (4, 4))
         # aux1: N x 512 x 4 x 4, aux2: N x 528 x 4 x 4
@@ -288,7 +292,6 @@ class InceptionAux(nn.Module):
         # N x 1024
         x = F.dropout(x, 0.7, training=self.training)
         # N x 1024
-
         #x = self.fc2(x)
         # N x 1000 (num_classes)
 
