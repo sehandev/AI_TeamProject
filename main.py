@@ -39,12 +39,11 @@ def get_model(model_name, model_config):
     if model_name in ['resnet50', 'resnet101', 'resnet152']:
         model = _resnet(model_name, model_config['lr'])
     elif model_name in ['RNN', 'LSTM']:
-        model = LSTMModel(224, 1000, 10, 3, model_config['lr'])
+        model = LSTMModel(224, 1000, 3, 3, model_config['lr'])
     elif model_name == 'GRU':
         model = GRUModel(224, 1000, 10, 3, model_config['lr'])
-    elif model_name == 'VGG':
+    elif model_name == 'VGGNet':
         model = VGGNet(16, 3, 64, 3, model_config['lr'])
-        return
     elif model_name == 'GoogLeNet':
         print('Not yet GoogLeNet')
         return
@@ -142,6 +141,7 @@ def train_model(model_name):
         ],
         'gpus': config.NUM_GPUS,
         'max_epochs': config.EPOCHS,
+        'accelerator' : "dp",
         # 'progress_bar_refresh_rate' : 0,
     }
 
@@ -164,7 +164,7 @@ def test_model(model_name):
             checkpoint_path=helper.get_best_checkpoint_path(model_name),
             input_dim=224,
             hidden_dim=1000,
-            layer_dim=10,
+            layer_dim=3,
             output_dim=3,
             learning_rate=0,
         )
@@ -232,6 +232,7 @@ def test_model(model_name):
 
 
 if __name__ == '__main__':
+    # LSTM, GRU, resnet50, VGGNet, GoogLeNet
     model_name = 'GRU'
     train_model(model_name)  # model을 config.py의 설정으로 1번 학습하기
     # run_tune(model_name)  # hyper-parameter tuning

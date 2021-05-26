@@ -33,7 +33,7 @@ def get_class_id(class_name):
 def early_stopping():
     return EarlyStopping(
         monitor='val_loss',  # 기준으로 삼을 metric
-        patience=5,  # epoch 몇 번동안 성능이 향상되지 않으면 stop할지
+        patience=3,  # epoch 몇 번동안 성능이 향상되지 않으면 stop할지
         verbose=True,  # 출력 yer or no
         mode='min'  # monitor 값이 max or min 중 어디로 향해야 하는지
     )
@@ -45,7 +45,7 @@ def get_preprocess_function(model_name, is_crop=True):
     else:
         crop_size = 256
 
-    if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGG', 'GoogLeNet']:
+    if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGGNet', 'GoogLeNet']:
         preprocess = transforms.Compose([
             transforms.Resize((256, 256)),
             transforms.CenterCrop(crop_size),
@@ -59,9 +59,6 @@ def get_preprocess_function(model_name, is_crop=True):
             transforms.Grayscale(1),
             transforms.ToTensor(),
         ])
-    elif model_name == 'VGG':
-        print('Not yet VGG')
-        return
     elif model_name == 'GoogLeNet':
         print('Not yet GoogLeNet')
         return
@@ -80,9 +77,8 @@ def get_best_checkpoint_path(model_name):
         checkpoint_dir = './LSTM/model'
     elif model_name == 'GRU':
         checkpoint_dir = './GRU/model'
-    elif model_name == 'VGG':
-        print('Not yet VGG')
-        return
+    elif model_name == 'VGGNet':
+        checkpoint_dir = './VGGNet/model'
     elif model_name == 'GoogLeNet':
         print('Not yet GoogLeNet')
         return

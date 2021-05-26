@@ -1,3 +1,9 @@
+import torch
+from torch import nn
+from torch.nn import functional as F
+import pytorch_lightning as pl
+from pytorch_lightning.metrics import functional as FM
+
 class VGGNet(pl.LightningModule):
     def __init__(self, num_layers, input_size, output_size, num_classes, learning_rate):
         super(VGGNet, self).__init__()
