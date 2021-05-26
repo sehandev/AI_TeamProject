@@ -8,7 +8,7 @@ import time
 from googlenet import googlenet
 from check import check
 
-model = googlenet()
+model = googlenet(0.0003)
 model.eval()
 
 each_accuracy = 0

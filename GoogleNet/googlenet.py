@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
 import os
-# from .utils import load_state_dict_from_url
+
 from typing import Optional, Tuple, List, Callable, Any
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
@@ -15,8 +15,7 @@ __all__ = ['GoogLeNet', 'googlenet', "GoogLeNetOutputs", "_GoogLeNetOutputs"]
 
 
 GoogLeNetOutputs = namedtuple('GoogLeNetOutputs', ['logits', 'aux_logits2', 'aux_logits1'])
-GoogLeNetOutputs.__annotations__ = {'logits': Tensor, 'aux_logits2': Optional[Tensor],
-                                    'aux_logits1': Optional[Tensor]}
+GoogLeNetOutputs.__annotations__ = {'logits', 'aux_logits2', 'aux_logits1'}
 
 _GoogLeNetOutputs = GoogLeNetOutputs
 
@@ -103,14 +102,14 @@ class GoogLeNet(pl.LightningModule):
         self.loss = F.cross_entropy
 
 
-    def _transform_input(self, x: Tensor) -> Tensor:
+    def _transform_input(self, x) -> Tensor:
         x_ch0 = torch.unsqueeze(x[:, 0], 1) * (0.229 / 0.5) + (0.485 - 0.5) / 0.5
         x_ch1 = torch.unsqueeze(x[:, 1], 1) * (0.224 / 0.5) + (0.456 - 0.5) / 0.5
         x_ch2 = torch.unsqueeze(x[:, 2], 1) * (0.225 / 0.5) + (0.406 - 0.5) / 0.5
         x = torch.cat((x_ch0, x_ch1, x_ch2), 1)
         return x
 
-    def _forward(self, x: Tensor) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
+    def _forward(self, x) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
         # N x 3 x 224 x 224
         x = self.conv1(x)
         # N x 64 x 112 x 112
@@ -170,19 +169,14 @@ class GoogLeNet(pl.LightningModule):
         return x, aux2, aux1
 
     @torch.jit.unused
-    def eager_outputs(self, x: Tensor, aux2: Tensor, aux1: Optional[Tensor]) -> GoogLeNetOutputs:
-        if self.training and self.aux_logits:
-            return _GoogLeNetOutputs(x, aux2, aux1)
-        else:
-            return x   # type: ignore[return-value]
+    def eager_outputs(self, x, aux2, aux1):
+        return x
 
-    def forward(self, x: Tensor) -> GoogLeNetOutputs:
+    def forward(self, x):
         x = self._transform_input(x)
         x, aux1, aux2 = self._forward(x)
         aux_defined = self.training and self.aux_logits
         if torch.jit.is_scripting():
-            if not aux_defined:
-                warnings.warn("Scripted GoogleNet always returns GoogleNetOutputs Tuple")
             return GoogLeNetOutputs(x, aux2, aux1)
         else:
             return self.eager_outputs(x, aux2, aux1)
@@ -249,7 +243,7 @@ class Inception(nn.Module):
             conv_block(in_channels, pool_proj, kernel_size=1)
         )
 
-    def _forward(self, x: Tensor) -> List[Tensor]:
+    def _forward(self, x) -> List[Tensor]:
         branch1 = self.branch1(x)
         branch2 = self.branch2(x)
         branch3 = self.branch3(x)
@@ -258,7 +252,7 @@ class Inception(nn.Module):
         outputs = [branch1, branch2, branch3, branch4]
         return outputs
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x) -> Tensor:
         outputs = self._forward(x)
         return torch.cat(outputs, 1)
 
@@ -280,7 +274,7 @@ class InceptionAux(nn.Module):
         self.fc2 = nn.Linear(1024, 1000)  # original
         self.fc3 = nn.Linear(1024, 3)  # copied
 
-    def forward(self, x: Tensor):
+    def forward(self, x):
         # aux1: N x 512 x 14 x 14, aux2: N x 528 x 14 x 14
         x = F.adaptive_avg_pool2d(x, (4, 4))
         # aux1: N x 512 x 4 x 4, aux2: N x 528 x 4 x 4
@@ -312,7 +306,7 @@ class BasicConv2d(nn.Module):
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
         self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x) -> Tensor:
         x = self.conv(x)
         x = self.bn(x)
         return F.relu(x, inplace=True)
