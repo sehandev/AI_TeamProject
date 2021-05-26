@@ -8,57 +8,67 @@ from torch.hub import load_state_dict_from_url
 import os
 # from .utils import load_state_dict_from_url
 from typing import Optional, Tuple, List, Callable, Any
-from cropimage import 
+import pytorch_lightning as pl
+from pytorch_lightning.metrics import functional as FM
 
 __all__ = ['GoogLeNet', 'googlenet', "GoogLeNetOutputs", "_GoogLeNetOutputs"]
 
-model_urls = {
-    # GoogLeNet ported from TensorFlow
-    'googlenet': 'https://download.pytorch.org/models/googlenet-1378be20.pth',
-}
 
 GoogLeNetOutputs = namedtuple('GoogLeNetOutputs', ['logits', 'aux_logits2', 'aux_logits1'])
 GoogLeNetOutputs.__annotations__ = {'logits': Tensor, 'aux_logits2': Optional[Tensor],
                                     'aux_logits1': Optional[Tensor]}
 
-# Script annotations failed with _GoogleNetOutputs = namedtuple ...
-# _GoogLeNetOutputs set here for backwards compat
 _GoogLeNetOutputs = GoogLeNetOutputs
 
 
-def googlenet(pretrained: bool = False, **kwargs: Any) -> "GoogLeNet":
-    if pretrained:
-        original_aux_logits = False
-        kwargs['aux_logits'] = True
-        kwargs['init_weights'] = False
-    
-        model = GoogLeNet(**kwargs)
-        state_dict = load_state_dict_from_url(model_urls['googlenet'], progress=True)
-        model.load_state_dict(state_dict)
+def googlenet():
+    model = GoogLeNet()
+    model.load_state_dict(torch.load('./googlenet-1378be20.pth'), strict=False)
+    model.aux_logits = False
 
-        model.aux_logits = False
-        model.aux1 = None
-        model.aux2 = None
-        
-        return model
-    return GoogLeNet(**kwargs)
+    fc_weights = model.fc.weight.data  # pytorch tensor
+    model.fc3.weight.data[0] = fc_weights[288]
+    model.fc3.weight.data[1] = fc_weights[290]
+    model.fc3.weight.data[2] = fc_weights[293]
 
-class GoogLeNet(nn.Module):
-    __constants__ = ['aux_logits', 'transform_input']
-    def __init__(
-        self,
-        num_classes: int = 1000,
-        aux_logits: bool = True,
-        init_weights: Optional[bool] = False
-    ) -> None:
+    fc_biases = model.fc.bias.data
+    model.fc3.bias.data[0] = fc_biases[288]
+    model.fc3.bias.data[1] = fc_biases[290]
+    model.fc3.bias.data[2] = fc_biases[293]
+
+    fc_aux1_weights = model.aux1.fc2.weight.data
+    fc_aux1_biases = model.aux2.fc2.bias.data
+
+    model.aux1.fc3.weight.data[0] = fc_aux1_weights[288]
+    model.aux1.fc3.weight.data[1] = fc_aux1_weights[290]
+    model.aux1.fc3.weight.data[2] = fc_aux1_weights[293]
+
+    model.aux1.fc3.bias.data[0] = fc_aux1_biases[288]
+    model.aux1.fc3.bias.data[1] = fc_aux1_biases[290]
+    model.aux1.fc3.bias.data[2] = fc_aux1_biases[293]
+
+    fc_aux2_weights = model.aux2.fc2.weight.data
+    fc_aux2_biases = model.aux2.fc2.bias.data
+
+    model.aux2.fc3.weight.data[0] = fc_aux2_weights[288]
+    model.aux2.fc3.weight.data[1] = fc_aux2_weights[290]
+    model.aux2.fc3.weight.data[2] = fc_aux2_weights[293]
+
+    model.aux2.fc3.bias.data[0] = fc_aux2_biases[288]
+    model.aux2.fc3.bias.data[1] = fc_aux2_biases[290]
+    model.aux2.fc3.bias.data[2] = fc_aux2_biases[293]
+    return model
+
+class GoogLeNet(pl.LightningModule):
+    def __init__(self) :
         super(GoogLeNet, self).__init__()
-        blocks = [BasicConv2d, Inception, InceptionAux]
-        conv_block = blocks[0]
-        inception_block = blocks[1]
-        inception_aux_block = blocks[2]
+
+        conv_block = BasicConv2d
+        inception_block = Inception
+        inception_aux_block = InceptionAux
 
         self.aux_logits = True
-        self.transform_input = True
+        num_classes = 1000
 
         self.conv1 = conv_block(3, 64, kernel_size=7, stride=2, padding=3)
         self.maxpool1 = nn.MaxPool2d(3, stride=2, ceil_mode=True)
@@ -85,15 +95,15 @@ class GoogLeNet(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout(0.2)
-        self.fc = nn.Linear(1024, num_classes)
+        self.fc = nn.Linear(1024, 1000)
+        self.fc3 = nn.Linear(1024, 3)
 
 
     def _transform_input(self, x: Tensor) -> Tensor:
-        if self.transform_input:
-            x_ch0 = torch.unsqueeze(x[:, 0], 1) * (0.229 / 0.5) + (0.485 - 0.5) / 0.5
-            x_ch1 = torch.unsqueeze(x[:, 1], 1) * (0.224 / 0.5) + (0.456 - 0.5) / 0.5
-            x_ch2 = torch.unsqueeze(x[:, 2], 1) * (0.225 / 0.5) + (0.406 - 0.5) / 0.5
-            x = torch.cat((x_ch0, x_ch1, x_ch2), 1)
+        x_ch0 = torch.unsqueeze(x[:, 0], 1) * (0.229 / 0.5) + (0.485 - 0.5) / 0.5
+        x_ch1 = torch.unsqueeze(x[:, 1], 1) * (0.224 / 0.5) + (0.456 - 0.5) / 0.5
+        x_ch2 = torch.unsqueeze(x[:, 2], 1) * (0.225 / 0.5) + (0.406 - 0.5) / 0.5
+        x = torch.cat((x_ch0, x_ch1, x_ch2), 1)
         return x
 
     def _forward(self, x: Tensor) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
@@ -117,7 +127,7 @@ class GoogLeNet(nn.Module):
         # N x 480 x 14 x 14
         x = self.inception4a(x)
         # N x 512 x 14 x 14
-        aux1: Optional[Tensor] = None
+        aux1 = None
         if self.aux1 is not None:
             if self.training:
                 aux1 = self.aux1(x)
@@ -128,7 +138,7 @@ class GoogLeNet(nn.Module):
         # N x 512 x 14 x 14
         x = self.inception4d(x)
         # N x 528 x 14 x 14
-        aux2: Optional[Tensor] = None
+        aux2 = None
         if self.aux2 is not None:
             if self.training:
                 aux2 = self.aux2(x)
@@ -147,8 +157,12 @@ class GoogLeNet(nn.Module):
         x = torch.flatten(x, 1)
         # N x 1024
         x = self.dropout(x)
-        x = self.fc(x)
+
+        #x = self.fc(x)
         # N x 1000 (num_classes)
+        x = self.fc3(x)
+        # N x 3
+        
         return x, aux2, aux1
 
     @torch.jit.unused
@@ -168,10 +182,38 @@ class GoogLeNet(nn.Module):
             return GoogLeNetOutputs(x, aux2, aux1)
         else:
             return self.eager_outputs(x, aux2, aux1)
+    
+    def training_step(self, batch, batch_nb):
+        x, y = batch
+        y_hat = self(x)
+        y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
+        return loss
 
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.forward(x)
+        y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
+        acc = FM.accuracy(y_hat, y)
+
+        metrics = {'val_acc': acc, 'val_loss': loss}
+        self.log_dict(metrics)
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
+        acc = FM.accuracy(y_hat, y)
+
+        metrics = {'test_acc': acc, 'test_loss': loss}
+        self.log_dict(metrics)
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)
 
 class Inception(nn.Module):
-
     def __init__(
         self,
         in_channels: int,
@@ -231,7 +273,8 @@ class InceptionAux(nn.Module):
         self.conv = conv_block(in_channels, 128, kernel_size=1)
 
         self.fc1 = nn.Linear(2048, 1024)
-        self.fc2 = nn.Linear(1024, num_classes)
+        self.fc2 = nn.Linear(1024, 1000)  # original
+        self.fc3 = nn.Linear(1024, 3)  # copied
 
     def forward(self, x: Tensor) -> Tensor:
         # aux1: N x 512 x 14 x 14, aux2: N x 528 x 14 x 14
@@ -245,9 +288,12 @@ class InceptionAux(nn.Module):
         # N x 1024
         x = F.dropout(x, 0.7, training=self.training)
         # N x 1024
-        x = self.fc2(x)
+
+        #x = self.fc2(x)
         # N x 1000 (num_classes)
 
+        x = self.fc3(x)
+        # N x 3
         return x
 
 

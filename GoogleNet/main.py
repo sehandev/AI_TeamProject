@@ -8,7 +8,7 @@ import time
 from googlenet import googlenet
 from check import check
 
-model = googlenet(pretrained=True)
+model = googlenet()
 model.eval()
 
 each_accuracy = 0
@@ -19,7 +19,7 @@ else_animal = [0, 0, 0] #leopard, jaguar, cheetah
 start = time.time()
 
 for i in range(100):
-    input_image = Image.open(f'../../data/n02128385/{i}.JPEG')
+    input_image = Image.open(f'../test_data/n02128385/{i}.JPEG')
     Presume_animal = check(input_image, model)
     if Presume_animal == "leopard":
         each_accuracy += 1
@@ -37,7 +37,7 @@ else_animal = [0, 0, 0]
 start = time.time()
 
 for i in range(100):
-    input_image = Image.open(f'../../data/n02128925/{i}.JPEG')
+    input_image = Image.open(f'../test_data/n02128925/{i}.JPEG')
     Presume_animal = check(input_image, model)
     if Presume_animal == "jaguar":
         accuracy += 1
@@ -56,7 +56,7 @@ start = time.time()
 else_animal = [0, 0, 0]
 
 for i in range(100):
-    input_image = Image.open(f'../../data/n02130308/{i}.JPEG')
+    input_image = Image.open(f'../test_data/n02130308/{i}.JPEG')
     Presume_animal = check(input_image, model)
     if Presume_animal == "cheetah":
         accuracy += 1

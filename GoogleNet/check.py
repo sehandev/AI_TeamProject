@@ -40,14 +40,8 @@ def check(input_image, model):
 		'cheetah' : 'n02130308',
 	}
 
-	#CLASS_NAME_LIST = list(CLASS_IDS.keys())
-	#CLASS_ID_LIST = list(CLASS_IDS.values())
+	categories = ['leopard', 'jaguar', 'cheetah']
 
-	with open("imagenet_classes.txt", "r") as f:
-		categories = [s.strip() for s in f.readlines()]
-
-	# Show top categories per image
 	top3_prob, top3_catid = torch.topk(probabilities, 1)
-	#for i in range(top3_prob.size(0)):
-	#	print(categories[top3_catid[i]], top3_prob[i].item())
+
 	return categories[top3_catid[0]]

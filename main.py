@@ -19,6 +19,7 @@ from resnet.resnet import _resnet, ResNet, get_resnet_layer
 from LSTM.LSTM import LSTMModel
 from GRU.GRU import GRUModel
 from VGGNet.VGGNet import VGGNet
+from GoogleNet.googlenet import googlenet
 
 
 def open_image(class_name, index, preprocess):
@@ -45,7 +46,7 @@ def get_model(model_name, model_config):
     elif model_name == 'VGGNet':
         model = VGGNet(16, 3, 64, 3, model_config['lr'])
     elif model_name == 'GoogLeNet':
-        print('Not yet GoogLeNet')
+        model = googlenet()
         return
     else:
         print('ERROR : No implemented model')
