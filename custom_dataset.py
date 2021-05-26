@@ -41,10 +41,11 @@ class CustomImagenetDataset(Dataset):
         class_id = CLASS_ID_LIST[label]
         img_path = os.path.join(self.data_path, class_id, img_index)
         image = Image.open(img_path)
-        image = self.transform(image)
 
-        if self.model_name not in ['RNN', 'LSTM', 'GRU'] and len(image) == 1:
-            image = torch.cat((image, image, image), dim=0)
+        if self.model_name not in ['RNN', 'LSTM', 'GRU']:
+            image = image.convert('RGB')
+
+        image = self.transform(image)
 
         return (image, label)
 
