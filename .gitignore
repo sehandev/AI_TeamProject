@@ -130,7 +130,7 @@ dmypy.json
 
 /.idea
 /train
-/LSTM/model
+model/
 data/
 test_data/
 lightning_logs/
@@ -139,3 +139,4 @@ core
 checkpoint/
 *.ckpt
 *.pth
+ray_results/
