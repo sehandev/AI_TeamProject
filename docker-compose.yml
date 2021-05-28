@@ -1,21 +1,19 @@
 version: "3.9"
 services:
-  pt:
-    build: .
-    ports:
-      - 8004:8888
+  dev:
+    image: sehandev/softsplat
     volumes:
       - .:/workspace
-      - ../ray_result:/root/ray_results
+      - ./ray_results:/home/user/ray_results
     environment:
       - TZ=Asis/Seoul
       - DEBIAN_FRONTEND=noninteractive
-    shm_size: "32gb"
+    shm_size: "64gb"
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ["0"]
+              device_ids: ["1", "2", "3"]
               capabilities: [gpu]
     stdin_open: true

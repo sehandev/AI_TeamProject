@@ -65,13 +65,13 @@ class CustomImagenetDataModule(pl.LightningDataModule):
         self.test_dataset = CustomImagenetDataset(train=False, model_name=self.model_name)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
 
 if __name__ == '__main__':

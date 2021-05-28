@@ -1,7 +1,7 @@
-# System
+# Standard
 import os
 
-# Pip
+# PIP
 import torch
 import torchvision.transforms as transforms
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
@@ -10,11 +10,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 # Custom
 import config
 
-MODEL_PATHES = {
-    'resnet50': '/workspace/model/resnet50.pth',
-    'resnet101': '/workspace/model/resnet101.pth',
-    'resnet152': '/workspace/model/resnet152.pth',
-}
+# Model
+from ResNet.model import ResNetModel
+from LSTM.model import LSTMModel
+from GRU.model import GRUModel
+from VGGNet.model import VGGNet
+from GoogleNet.model import googlenet
+
 
 CLASS_IDS = {
     'leopard': 'n02128385',
@@ -39,27 +41,26 @@ def early_stopping():
     )
 
 
-# train과 test에 사용될 image를 전처리하는 함수
 def get_preprocess_function(model_name, is_crop=True):
-    if is_crop: # image를 가운데를 기준으로 잘라냄
+    if is_crop:
         crop_size = 224
-    else:   # image를 자르지 않고 그대로 사용함
+    else:
         crop_size = 256
 
-    if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGG16', 'VGG19', 'GoogLeNet']:
+    if model_name in ['ResNet50', 'VGGNet', 'GoogLeNet']:
         preprocess = transforms.Compose([
-            transforms.Resize((256, 256)),
+            transforms.Resize(256),
             transforms.CenterCrop(crop_size),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
-    # RNN은 RGB image를 인식하지 못하므로 GrayScale로 바꾸어 준다.
     elif model_name in ['RNN', 'LSTM', 'GRU']:
         preprocess = transforms.Compose([
-            transforms.Resize((256, 256)),
+            transforms.Resize(256),
             transforms.CenterCrop(crop_size),
             transforms.Grayscale(1),
             transforms.ToTensor(),
+            transforms.Normalize((0.485), (0.229)),
         ])
     else:
         print('ERROR : No implemented model')
@@ -68,39 +69,19 @@ def get_preprocess_function(model_name, is_crop=True):
     return preprocess
 
 
-# 가장 학습이 잘 된 체크포인트를 가져오는 함수
-def get_best_checkpoint_path(model_name):
-    checkpoint_dir = ''
-    if model_name in ['resnet50', 'resnet101', 'resnet152']:
-        checkpoint_dir = './resnet/model'
-    elif model_name in ['RNN', 'LSTM']:
-        checkpoint_dir = './LSTM/model'
+def get_model(model_name, learning_rate):
+    if model_name == 'ResNet50':
+        model = ResNetModel(learning_rate)
+    elif model_name == 'LSTM':
+        model = LSTMModel(224, 1000, 3, 3, learning_rate)
     elif model_name == 'GRU':
-        checkpoint_dir = './GRU/model'
-    elif model_name in ['VGG16', 'VGG19']:
-        checkpoint_dir = './VGGNet/model'
+        model = GRUModel(224, 1000, 3, 3, learning_rate)
+    elif model_name == 'VGGNet':
+        model = VGGNet(16, 3, 64, 3, learning_rate)
     elif model_name == 'GoogLeNet':
-        checkpoint_dir = './GoogleNet/model'
+        model = googlenet(learning_rate)
     else:
         print('ERROR : No implemented model')
         return
 
-    return f'{checkpoint_dir}/best_{model_name}.ckpt'
-
-
-def get_checkpoint_callback(model_name):
-    # checkpoint : project_path/model/[model name]-epoch=02-val_loss=0.32.ckpt
-
-    checkpoint_dir = os.path.join(config.PROJECT_PATH, 'checkpoint', model_name)
-    checkpoint_file_name = model_name + '-{epoch:02d}-{val_loss:.2f}'
-
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=checkpoint_dir,
-        filename=checkpoint_file_name,
-        monitor='val_loss',
-        mode='min',
-        save_top_k=1,
-        save_weights_only=True,
-    )
-
-    return checkpoint_callback
+    return model
