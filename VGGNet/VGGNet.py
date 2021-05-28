@@ -4,9 +4,10 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
-class VGGNet(pl.LightningModule):
+
+class VGGModel(pl.LightningModule):
     def __init__(self, num_layers, input_size, output_size, num_classes, learning_rate):
-        super(VGGNet, self).__init__()
+        super(VGGModel, self).__init__()
         self.num_classes = num_classes
         self.num_layer = num_layers
         if num_layers == 16:

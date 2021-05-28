@@ -18,7 +18,7 @@ import helper
 from resnet.resnet import _resnet, ResNet, get_resnet_layer
 from LSTM.LSTM import LSTMModel
 from GRU.GRU import GRUModel
-from VGGNet.VGGNet import VGGNet
+from VGGNet.VGGNet import VGGModel
 from GoogleNet.googlenet import googlenet
 from GoogleNet.googlenet import GoogLeNet
 
@@ -48,8 +48,10 @@ def get_model(model_name, model_config):
         model = LSTMModel(224, 1000, 3, 3, model_config['lr'])
     elif model_name == 'GRU':
         model = GRUModel(224, 1000, 10, 3, model_config['lr'])
-    elif model_name == 'VGGNet':
-        model = VGGNet(16, 3, 64, 3, model_config['lr'])
+    elif model_name == 'VGG16':
+        model = VGGModel(16, 3, 64, 3, model_config['lr'])
+    elif model_name == 'VGG19':
+        model = VGGModel(19, 3, 64, 3, model_config['lr'])
     elif model_name == 'GoogLeNet':
         model = googlenet(model_config['lr'])
     else:
@@ -178,28 +180,38 @@ def test_model(model_name):
         )
     elif model_name == 'GRU':
         model = GRUModel.load_from_checkpoint(
-          checkpoint_path=helper.get_best_checkpoint_path(model_name),
-          input_dim=224,
-          hidden_dim=1000,
-          layer_dim=10,
-          output_dim=3,
-          learning_rate=0,
+            checkpoint_path=helper.get_best_checkpoint_path(model_name),
+            input_dim=224,
+            hidden_dim=1000,
+            layer_dim=10,
+            output_dim=3,
+            learning_rate=0,
         )
-    elif model_name == 'VGG':
-        model = VGGNet.load_from_checkpoint(
-          checkpoint_path=helper.get_best_checkpoint_path(model_name),
-          input_size=224,
-          output_size=10,
-          num_classes=3,
-          learning_rate=0,
+    elif model_name == 'VGG16':
+        model = VGGModel.load_from_checkpoint(
+            checkpoint_path=get_best_checkpoint_path(model_name),
+            num_layers=16,
+            input_size=3,
+            output_size=64,
+            num_classes=3,
+            learning_rate=0,
+        )
+    elif model_name == 'VGG19':
+        model = VGGModel.load_from_checkpoint(
+            checkpoint_path=get_best_checkpoint_path(model_name),
+            num_layers=19,
+            input_size=3,
+            output_size=64,
+            num_classes=3,
+            learning_rate=0,
         )
     elif model_name == 'GoogLeNet':
         model = GoogLeNet.load_from_checkpoint(
-          checkpoint_path='./GoogleNet/model/best_GoogLeNet.ckpt',
-          input_size=224,
-          output_size=10,
-          num_classes=3,
-          learning_rate=0,
+            checkpoint_path='./GoogleNet/model/best_GoogLeNet.ckpt',
+            input_size=224,
+            output_size=10,
+            num_classes=3,
+            learning_rate=0,
         )
     else:
         print('ERROR : No implemented model')
@@ -245,7 +257,7 @@ def test_model(model_name):
 
 
 if __name__ == '__main__':
-    # LSTM, GRU, resnet50, VGGNet, GoogLeNet
+    # LSTM, GRU, resnet50, VGG16, VGG19, GoogLeNet
     model_name = 'GoogLeNet'
     train_model(model_name)  # model을 config.py의 설정으로 1번 학습하기
     run_tune(model_name)  # hyper-parameter tuning

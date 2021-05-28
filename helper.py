@@ -46,7 +46,7 @@ def get_preprocess_function(model_name, is_crop=True):
     else:   # image를 자르지 않고 그대로 사용함
         crop_size = 256
 
-    if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGGNet', 'GoogLeNet']:
+    if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGG16', 'VGG19', 'GoogLeNet']:
         preprocess = transforms.Compose([
             transforms.Resize((256, 256)),
             transforms.CenterCrop(crop_size),
@@ -77,7 +77,7 @@ def get_best_checkpoint_path(model_name):
         checkpoint_dir = './LSTM/model'
     elif model_name == 'GRU':
         checkpoint_dir = './GRU/model'
-    elif model_name == 'VGGNet':
+    elif model_name in ['VGG16', 'VGG19']:
         checkpoint_dir = './VGGNet/model'
     elif model_name == 'GoogLeNet':
         checkpoint_dir = './GoogleNet/model'
