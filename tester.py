@@ -11,6 +11,7 @@ import config
 import helper
 
 
+# image를 불러오는 함수
 def open_image(class_name, index, preprocess):
     class_id = helper.get_class_id(class_name)
     file_name = f'{index}.JPEG'
@@ -64,6 +65,6 @@ def test(model_name):
 
 if __name__ == '__main__':
     # LSTM, GRU, ResNet50, VGGNet, GoogLeNet
-    model_name = 'GRU'
+    model_name = 'GoogLeNet'
 
     test(model_name)

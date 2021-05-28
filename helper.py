@@ -15,7 +15,7 @@ from ResNet.model import ResNetModel
 from LSTM.model import LSTMModel
 from GRU.model import GRUModel
 from VGGNet.model import VGGNet
-from GoogleNet.model import googlenet
+from GoogleNet.model import GoogleNet
 
 
 CLASS_IDS = {
@@ -41,10 +41,13 @@ def early_stopping():
     )
 
 
+# train과 test에 사용될 image를 전처리하는 함수
 def get_preprocess_function(model_name, is_crop=True):
     if is_crop:
+        # image를 가운데를 기준으로 잘라냄
         crop_size = 224
     else:
+        # image를 자르지 않고 그대로 사용함
         crop_size = 256
 
     if model_name in ['ResNet50', 'VGGNet', 'GoogLeNet']:
@@ -55,6 +58,7 @@ def get_preprocess_function(model_name, is_crop=True):
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
     elif model_name in ['RNN', 'LSTM', 'GRU']:
+        # RNN은 RGB image를 인식하지 못하므로 GrayScale로 바꾸어 준다.
         preprocess = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(crop_size),
@@ -69,6 +73,7 @@ def get_preprocess_function(model_name, is_crop=True):
     return preprocess
 
 
+# model class 생성하는 함수
 def get_model(model_name, learning_rate):
     if model_name == 'ResNet50':
         model = ResNetModel(learning_rate)
@@ -79,7 +84,7 @@ def get_model(model_name, learning_rate):
     elif model_name == 'VGGNet':
         model = VGGNet(16, 3, 64, 3, learning_rate)
     elif model_name == 'GoogLeNet':
-        model = googlenet(learning_rate)
+        model = GoogLeNet(learning_rate)
     else:
         print('ERROR : No implemented model')
         return

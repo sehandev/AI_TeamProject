@@ -1,8 +1,6 @@
 import os
 
 import torch
-from torch import nn
-from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
 from PIL import Image
@@ -53,10 +51,11 @@ def tune_model(tune_config, checkpoint_dir=None, model_name=None):
     fit_model(tune_config, model_name, model, is_tune=True)
 
 
+# hyper-parameter tuning 함수
 def run_tune(model_name):
     tune_config = {
-        'seed': tune.randint(0, 1000),
-        'lr': tune.uniform(1e-4, 1e-8),
+        'seed': tune.randint(0, 1000),  # 0부터 1000 사이의 랜덤한 정수값
+        'lr': tune.uniform(1e-4, 1e-5), # 0.0001부터 0.00001 사이의 랜덤한 실수값
         'num_epochs': 50,
     }
 
@@ -81,6 +80,7 @@ def run_tune(model_name):
     print(analysis.best_config)
 
 
+# model을 config.py의 설정으로 1번 학습시키는 함수
 def train_model(model_name):
     pl.seed_everything(config.SEED, workers=True)
 
