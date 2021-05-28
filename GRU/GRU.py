@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 
+# LSTM과 같은 RNN이므로 LSTM model을 그대로 가져온 후 cell state만 제거함
 class GRUModel(pl.LightningModule):
     def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, learning_rate):
         super(GRUModel, self).__init__()
@@ -28,7 +29,8 @@ class GRUModel(pl.LightningModule):
             pass
 
     def forward(self, x):
-        x = x.squeeze()  # [10, 224, 224] [batch_size, input_size, input_size]
+        # color값 제거 [batch_size, color, input_size, input_size] -> [batch_size, input_size, input_size]
+        x = x.squeeze()
         if len(list(x.size())) < 3:  # batch_size == 1이면 다시 늘려줌
             x = x.unsqueeze(0)
 
@@ -49,15 +51,14 @@ class GRUModel(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
+        y_hat = F.softmax(y_hat, dim=1)
         acc = FM.accuracy(y_hat, y)
 
         metrics = {'val_acc': acc, 'val_loss': loss}

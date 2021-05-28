@@ -39,10 +39,11 @@ def early_stopping():
     )
 
 
+# train과 test에 사용될 image를 전처리하는 함수
 def get_preprocess_function(model_name, is_crop=True):
-    if is_crop:
+    if is_crop: # image를 가운데를 기준으로 잘라냄
         crop_size = 224
-    else:
+    else:   # image를 자르지 않고 그대로 사용함
         crop_size = 256
 
     if model_name in ['resnet50', 'resnet101', 'resnet152', 'VGGNet', 'GoogLeNet']:
@@ -52,6 +53,7 @@ def get_preprocess_function(model_name, is_crop=True):
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
+    # RNN은 RGB image를 인식하지 못하므로 GrayScale로 바꾸어 준다.
     elif model_name in ['RNN', 'LSTM', 'GRU']:
         preprocess = transforms.Compose([
             transforms.Resize((256, 256)),
@@ -66,6 +68,7 @@ def get_preprocess_function(model_name, is_crop=True):
     return preprocess
 
 
+# 가장 학습이 잘 된 체크포인트를 가져오는 함수
 def get_best_checkpoint_path(model_name):
     checkpoint_dir = ''
     if model_name in ['resnet50', 'resnet101', 'resnet152']:

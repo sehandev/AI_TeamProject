@@ -23,6 +23,7 @@ from GoogleNet.googlenet import googlenet
 from GoogleNet.googlenet import GoogLeNet
 
 
+# image를 불러오는 함수
 def open_image(class_name, index, preprocess):
     class_id = helper.get_class_id(class_name)
     file_name = f'{index}.JPEG'
@@ -39,6 +40,7 @@ def open_image(class_name, index, preprocess):
     return image
 
 
+# model class 생성하는 함수
 def get_model(model_name, model_config):
     if model_name in ['resnet50', 'resnet101', 'resnet152']:
         model = _resnet(model_name, model_config['lr'])
@@ -93,10 +95,11 @@ def tune_model(tune_config, checkpoint_dir=None, model_name=None):
     fit_model(tune_config, model_name, model, is_tune=True)
 
 
+# hyper-parameter tuning 함수
 def run_tune(model_name):
     tune_config = {
-        'seed': tune.randint(0, 1000),
-        'lr': 3e-4,
+        'seed': tune.randint(0, 1000),  # 0부터 1000 사이의 랜덤한 정수값
+        'lr': tune.uniform(1e-4, 1e-5), # 0.0001부터 0.00001 사이의 랜덤한 실수값
         'batch_size': 10,
         'num_epochs': 20,
     }
@@ -120,9 +123,10 @@ def run_tune(model_name):
         # resume=True,
     )
 
-    #print(analysis.best_config)
+    # print(analysis.best_config)
 
 
+# model을 config.py의 설정으로 1번 학습시키는 함수
 def train_model(model_name):
     pl.seed_everything(config.SEED)
 
@@ -155,6 +159,7 @@ def train_model(model_name):
     trainer.save_checkpoint(helper.get_best_checkpoint_path(model_name))
 
 
+# test data 300개로 정확도 확인하는 함수
 def test_model(model_name):
     if model_name in ['resnet50', 'resnet101', 'resnet152']:
         model = ResNet.load_from_checkpoint(
@@ -182,7 +187,7 @@ def test_model(model_name):
         )
     elif model_name == 'VGG':
         model = VGGNet.load_from_checkpoint(
-          checkpoint_path=get_best_checkpoint_path(model_name),
+          checkpoint_path=helper.get_best_checkpoint_path(model_name),
           input_size=224,
           output_size=10,
           num_classes=3,
@@ -211,7 +216,7 @@ def test_model(model_name):
 
             # Test image
             input_tensor = open_image(class_name, index, preprocess)
-            input_batch = input_tensor.unsqueeze(0)  # [1, 3, 224, 224]
+            input_batch = input_tensor.unsqueeze(0)  # [1, 3, 224, 224] [batch_size, color, input_size, input_size]
 
             # GPU
             if torch.cuda.is_available():
