@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 
-# LSTM과 같은 RNN이므로 LSTM model을 그대로 가져온 후 cell state만 제거함
+# LSTM model을 그대로 가져온 후 cell state만 제거함
 class GRUModel(pl.LightningModule):
     def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, learning_rate):
         super(GRUModel, self).__init__()
