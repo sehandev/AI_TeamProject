@@ -29,7 +29,7 @@ class VGGNet(pl.LightningModule):
 
         self.conv_layer = nn.Sequential(*conv_list)
 
-        fc_layer_hidden = 512
+        fc_layer_hidden = 1024
         self.fc_layer = nn.Sequential(
             nn.Linear(self.output_size * 7 * 7, fc_layer_hidden * 2),
             nn.ReLU(inplace=True),

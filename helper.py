@@ -15,7 +15,7 @@ from ResNet.model import ResNetModel
 from LSTM.model import LSTMModel
 from GRU.model import GRUModel
 from VGGNet.model import VGGNet
-from GoogleNet.model import GoogleNet
+from GoogleNet.model import GoogLeNet
 
 
 CLASS_IDS = {
@@ -45,23 +45,23 @@ def early_stopping():
 def get_preprocess_function(model_name, is_crop=True):
     if is_crop:
         # image를 가운데를 기준으로 잘라냄
-        crop_size = 224
+        resize_size = 256
     else:
         # image를 자르지 않고 그대로 사용함
-        crop_size = 256
+        resize_size = 224
 
     if model_name in ['ResNet50', 'VGGNet', 'GoogLeNet']:
         preprocess = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(crop_size),
+            transforms.Resize((resize_size, resize_size)),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
     elif model_name in ['RNN', 'LSTM', 'GRU']:
         # RNN은 RGB image를 인식하지 못하므로 GrayScale로 바꾸어 준다.
         preprocess = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(crop_size),
+            transforms.Resize((resize_size, resize_size)),
+            transforms.CenterCrop(224),
             transforms.Grayscale(1),
             transforms.ToTensor(),
             transforms.Normalize((0.485), (0.229)),
