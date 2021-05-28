@@ -7,19 +7,17 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 # Custom
-import resnet.config as config
-import resnet.helper as helper
-from resnet.bottleneck_pl import Bottleneck
+from .helper import conv1x1
+from .bottleneck_pl import Bottleneck
 
 
-class ResNet(pl.LightningModule):
+class ResNetModel(pl.LightningModule):
 
     def __init__(
         self,
-        num_layer_list,
         learning_rate,
     ):
-        super(ResNet, self).__init__()
+        super(ResNetModel, self).__init__()
 
         self.in_channels = 64
         self.lr = learning_rate
@@ -29,16 +27,14 @@ class ResNet(pl.LightningModule):
         self.relu = nn.ReLU(inplace=True)
 
         # layers
-        self.layer1 = self._make_layer(64, num_layer_list[0], 1)
-        self.layer2 = self._make_layer(128, num_layer_list[1], 2)
-        self.layer3 = self._make_layer(256, num_layer_list[2], 2)
-        self.layer4 = self._make_layer(512, num_layer_list[3], 2)
+        self.layer1 = self._make_layer(64, 3, 1)
+        self.layer2 = self._make_layer(128, 4, 2)
+        self.layer3 = self._make_layer(256, 6, 2)
+        self.layer4 = self._make_layer(512, 3, 2)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # max pooling
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # avarage pooling
-        # self.fc = nn.Linear(512 * 4, 1000)  # fully connected
-        # self.fc1 = nn.Linear(1000, 3)  # fully connected
-        self.fc_out = nn.Linear(512 * 4, 3)  # fully connected
+        self.fc_out = nn.Linear(2048, 3)  # fully connected
         self.loss = F.cross_entropy
 
         for module in self.modules():
@@ -47,14 +43,14 @@ class ResNet(pl.LightningModule):
                 nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(module, nn.BatchNorm2d):
                 # Init weight, bias
-                module.weight.data.uniform_(0.0, 1.0)
+                module.weight.data.fill_(1)
                 module.bias.data.fill_(0)
 
     def _make_layer(self, channels, num_block, stride):
 
         # Set downsample
         downsample = nn.Sequential(
-            helper.conv1x1(self.in_channels, channels * 4, stride),
+            conv1x1(self.in_channels, channels * 4, stride),
             nn.BatchNorm2d(channels * 4),
         )
 
@@ -98,12 +94,6 @@ class ResNet(pl.LightningModule):
         out = torch.flatten(out, 1)
         # out : [batch_size, 2048]
 
-        # out = self.fc(out)
-        # out : [batch_size, 1000]
-
-        # out = self.fc1(out)
-        # out : [1000, 3]
-
         out = self.fc_out(out)
         # out : [batch_size, 3]
 
@@ -133,14 +123,4 @@ class ResNet(pl.LightningModule):
         self.log_dict(metrics)
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
-
-
-def get_resnet_layer(model_name):
-    return helper.NUM_LAYERS[model_name]
-
-
-def _resnet(model_name, learning_rate):
-    model = ResNet(get_resnet_layer(model_name), learning_rate)
-    model = helper.load_model(model_name, model)
-    return model
+        return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)

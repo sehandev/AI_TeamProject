@@ -10,40 +10,6 @@ from pytorch_lightning.metrics import functional as FM
 
 def googlenet(learning_rate):
     model = GoogLeNet(learning_rate)
-    model.load_state_dict(torch.load('/home/maylily/project/studing/AI_TeamProject/GoogleNet/googlenet-1378be20.pth'), strict=False)
-    model.aux_logits = False
-
-    fc_weights = model.fc.weight.data  # pytorch tensor
-    model.fc3.weight.data[0] = fc_weights[288]
-    model.fc3.weight.data[1] = fc_weights[290]
-    model.fc3.weight.data[2] = fc_weights[293]
-
-    fc_biases = model.fc.bias.data
-    model.fc3.bias.data[0] = fc_biases[288]
-    model.fc3.bias.data[1] = fc_biases[290]
-    model.fc3.bias.data[2] = fc_biases[293]
-
-    fc_aux1_weights = model.aux1.fc2.weight.data
-    fc_aux1_biases = model.aux2.fc2.bias.data
-
-    model.aux1.fc3.weight.data[0] = fc_aux1_weights[288]
-    model.aux1.fc3.weight.data[1] = fc_aux1_weights[290]
-    model.aux1.fc3.weight.data[2] = fc_aux1_weights[293]
-
-    model.aux1.fc3.bias.data[0] = fc_aux1_biases[288]
-    model.aux1.fc3.bias.data[1] = fc_aux1_biases[290]
-    model.aux1.fc3.bias.data[2] = fc_aux1_biases[293]
-
-    fc_aux2_weights = model.aux2.fc2.weight.data
-    fc_aux2_biases = model.aux2.fc2.bias.data
-
-    model.aux2.fc3.weight.data[0] = fc_aux2_weights[288]
-    model.aux2.fc3.weight.data[1] = fc_aux2_weights[290]
-    model.aux2.fc3.weight.data[2] = fc_aux2_weights[293]
-
-    model.aux2.fc3.bias.data[0] = fc_aux2_biases[288]
-    model.aux2.fc3.bias.data[1] = fc_aux2_biases[290]
-    model.aux2.fc3.bias.data[2] = fc_aux2_biases[293]
 
     return model
 
@@ -156,14 +122,15 @@ class GoogLeNet(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self(x)
+        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss(y_hat, y)
         y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
         acc = FM.accuracy(y_hat, y)
 
         metrics = {'val_acc': acc, 'val_loss': loss}
@@ -172,8 +139,8 @@ class GoogLeNet(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = self.loss(y_hat, y)
         y_hat = F.softmax(y_hat, dim=1)
+        loss = self.loss(y_hat, y)
         acc = FM.accuracy(y_hat, y)
 
         metrics = {'test_acc': acc, 'test_loss': loss}

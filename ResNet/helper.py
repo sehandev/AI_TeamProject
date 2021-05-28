@@ -1,18 +1,4 @@
-import torch
 from torch import nn
-
-
-MODEL_PATHES = {
-    'resnet50' : '/workspace/resnet/model/resnet50.pth',
-    'resnet101' : '/workspace/resnet/model/resnet101.pth',
-    'resnet152' : '/workspace/resnet/model/resnet152.pth',
-}
-
-NUM_LAYERS = {
-    'resnet50' : [3, 4, 6, 3],
-    'resnet101' : [3, 4, 23, 3],
-    'resnet152' : [3, 8, 36, 3],
-}
 
 
 def conv3x3(in_channels, out_channels, stride):
@@ -29,6 +15,7 @@ def conv3x3(in_channels, out_channels, stride):
         dilation=1
     )
 
+
 def conv1x1(in_channels, out_channels, stride):
     # 1x1 convolution
 
@@ -39,10 +26,3 @@ def conv1x1(in_channels, out_channels, stride):
         stride=stride,
         bias=False,
     )
-
-def load_model(model_name, model):
-  state_dict = torch.load(MODEL_PATHES[model_name])
-  model.load_state_dict(state_dict, strict=False)
-  model.eval()
-
-  return model
