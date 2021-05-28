@@ -8,11 +8,6 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import functional as FM
 
 
-def googlenet(learning_rate):
-    model = GoogLeNet(learning_rate)
-
-    return model
-
 class GoogLeNet(pl.LightningModule):
     def __init__(self, learning_rate) :
         super(GoogLeNet, self).__init__()
