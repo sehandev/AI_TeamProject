@@ -23,11 +23,14 @@ class LSTMModel(pl.LightningModule):
         # Readout layer
         self.fc = nn.Linear(hidden_dim, output_dim)
 
+        # Learning Rate
         self.lr = learning_rate
+        # Loss function
         self.loss = F.cross_entropy
         if torch.cuda.is_available():
             pass
 
+    # forward propagation function
     def forward(self, x):
         # color값 제거 [batch_size, color, input_size, input_size] -> [batch_size, input_size, input_size]
         x = x.squeeze()
@@ -40,16 +43,18 @@ class LSTMModel(pl.LightningModule):
         # Initialize cell state
         c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(self.device)  # [layer_dim, 3, 1000]
 
-        # One time step
+        # 224 time steps
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
 
         # Index hidden state of last time step
-        # out.size() --> 100, 28, 100
+        # out.size() --> 100, 224, 100
         # out[:, -1, :] --> 100, 100 --> just want last time step hidden states!
         out = self.fc(out[:, -1, :])
-        # out.size() --> 100, 10
+        # out.size() --> 100, 3
         return out
 
+    # code 출처: https://www.secmem.org/blog/2021/01/07/pytorch-lightning-tutorial/
+    # 모델의 output과 정답 라벨 사이의 cross entropy loss를 구해서 넘겨주는 함수
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self(x)
@@ -57,16 +62,18 @@ class LSTMModel(pl.LightningModule):
         loss = self.loss(y_hat, y)
         return loss
 
+    # 모델의 정확도와 cross entropy loss를 구해서 저장하는 함수
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = self.loss(y_hat, y)
         y_hat = F.softmax(y_hat, dim=1)
-        acc = FM.accuracy(y_hat, y)
+        acc = FM.accuracy(y_hat, y) # logits에서 최댓값인 라벨이 실제 라벨과 일치하는 비율을 구해줌
 
         metrics = {'val_acc': acc, 'val_loss': loss}
         self.log_dict(metrics)
 
+    # 정확도와 cross entropy loss를 기록하는 함수
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
@@ -78,4 +85,5 @@ class LSTMModel(pl.LightningModule):
         self.log_dict(metrics)
 
     def configure_optimizers(self):
+        # SGD를 사용하였을 때, loss값이 줄어들지 않아서 AdamW로 함수를 변경하였다.
         return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)
