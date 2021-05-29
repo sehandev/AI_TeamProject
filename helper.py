@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import config
 
 # Model
-from ResNet.model import ResNetModel
+from ResNet.model import ResNet
 from LSTM.model import LSTMModel
 from GRU.model import GRUModel
 from VGGNet.model import VGGNet
@@ -25,14 +25,22 @@ CLASS_IDS = {
 }
 
 CLASS_NAME_LIST = list(CLASS_IDS.keys())
-CLASS_ID_LIST = list(CLASS_IDS.values())
 
 
 def get_class_id(class_name):
+    """동물 이름으로 ImageNet의 class id를 불러오기
+    
+    Parameters
+    ----------
+    class_name : str
+        동물 이름
+    """
     return CLASS_IDS[class_name]
 
 
 def early_stopping():
+    # pytorch lightning의 trainer가 overfitting을 막도록 멈추는 함수
+
     return EarlyStopping(
         monitor='val_loss',  # 기준으로 삼을 metric
         patience=3,  # epoch 몇 번동안 성능이 향상되지 않으면 stop할지
@@ -41,8 +49,18 @@ def early_stopping():
     )
 
 
-# train과 test에 사용될 image를 전처리하는 함수
 def get_preprocess_function(model_name, is_crop=True):
+    """train과 test에 사용할 image를 전처리하는 함수
+    
+    Parameters
+    ----------
+    model_name : str
+        model 이름
+    is_crop : bool, optional
+        image의 가운데 224 x 224를 잘라낼지
+        default value is True
+    """
+
     if is_crop:
         # image를 가운데를 기준으로 잘라냄
         resize_size = 256
@@ -50,7 +68,7 @@ def get_preprocess_function(model_name, is_crop=True):
         # image를 자르지 않고 그대로 사용함
         resize_size = 224
 
-    if model_name in ['ResNet50', 'VGGNet', 'GoogLeNet']:
+    if model_name in ['ResNet', 'VGGNet', 'GoogLeNet']:
         preprocess = transforms.Compose([
             transforms.Resize((resize_size, resize_size)),
             transforms.CenterCrop(224),
@@ -73,10 +91,19 @@ def get_preprocess_function(model_name, is_crop=True):
     return preprocess
 
 
-# model class 생성하는 함수
 def get_model(model_name, learning_rate):
-    if model_name == 'ResNet50':
-        model = ResNetModel(learning_rate)
+    """model object를 생성하는 함수
+    
+    Parameters
+    ----------
+    model_name : str
+        model 이름
+    learning_rate : float
+        model을 학습시킬 때 적용할 learning rate
+    """
+
+    if model_name == 'ResNet':
+        model = ResNet(learning_rate)
     elif model_name == 'LSTM':
         model = LSTMModel(224, 1000, 3, 3, learning_rate)
     elif model_name == 'GRU':

@@ -13,13 +13,13 @@ from .helper import conv1x1
 from .bottleneck_pl import Bottleneck
 
 
-class ResNetModel(pl.LightningModule):
+class ResNet(pl.LightningModule):
 
     def __init__(
         self,
         learning_rate,
     ):
-        super(ResNetModel, self).__init__()
+        super(ResNet, self).__init__()
 
         self.in_channels = 64
         self.lr = learning_rate

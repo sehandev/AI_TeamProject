@@ -1,7 +1,7 @@
-# System
+# Standard
 import os
 
-# Pip
+# PIP
 from PIL import Image
 import pytorch_lightning as pl
 import torch
@@ -14,6 +14,18 @@ from helper import get_preprocess_function, CLASS_ID_LIST
 
 
 class CustomImagenetDataset(Dataset):
+    """
+    표범, 치타, 재규어로 이루어진 dataset
+
+    Attributes
+    ----------
+    train : bool
+        True = training을 위함
+        False = test를 위함
+    model_name : str
+        model 이름
+    """
+    
     def __init__(self, train, model_name):
         self.train = train
         self.model_name = model_name
@@ -29,6 +41,7 @@ class CustomImagenetDataset(Dataset):
             self.length = config.TEST_DATA_LEN
             self.data_path = config.TEST_DATA_PATH
 
+        # 전처리 함수
         self.transform = get_preprocess_function(model_name, is_crop=True)
 
     def __len__(self):
@@ -51,6 +64,16 @@ class CustomImagenetDataset(Dataset):
 
 
 class CustomImagenetDataModule(pl.LightningDataModule):
+    """
+    pytorch lightning을 위한 data module
+
+    Attributes
+    ----------
+    batch_size : int
+        mini batch에 사용할 data의 길이
+    model_name : str
+        model 이름
+    """
     def __init__(self, batch_size, model_name):
         super().__init__()
         self.batch_size = batch_size
@@ -60,6 +83,8 @@ class CustomImagenetDataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage=None):
+        # dataset을 설정하는 함수
+        
         dataset = CustomImagenetDataset(train=True, model_name=self.model_name)
         self.train_dataset, self.val_dataset = random_split(dataset, [3300, 300])
         self.test_dataset = CustomImagenetDataset(train=False, model_name=self.model_name)
