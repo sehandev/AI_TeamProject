@@ -1,5 +1,7 @@
+# Standard
 import os
 
+# PIP
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -27,10 +29,10 @@ class ResNetModel(pl.LightningModule):
         self.relu = nn.ReLU(inplace=True)
 
         # layers
-        self.layer1 = self._make_layer(64, 3, 1)
-        self.layer2 = self._make_layer(128, 4, 2)
-        self.layer3 = self._make_layer(256, 6, 2)
-        self.layer4 = self._make_layer(512, 3, 2)
+        self.layer1 = self.build_layer(64, 3, 1)
+        self.layer2 = self.build_layer(128, 4, 2)
+        self.layer3 = self.build_layer(256, 6, 2)
+        self.layer4 = self.build_layer(512, 3, 2)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # max pooling
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # avarage pooling
@@ -39,14 +41,19 @@ class ResNetModel(pl.LightningModule):
 
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
-                # Init with reference [3] normal distribution
+                # Init weight with reference [3] normal distribution
                 nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
+                # bias는 사용하지 않음
             elif isinstance(module, nn.BatchNorm2d):
                 # Init weight, bias
                 module.weight.data.fill_(1)
                 module.bias.data.fill_(0)
+            elif isinstance(module, nn.Linear):
+                # Init weight, bias
+                nn.init.xavier_uniform_(module.weight)
+                module.bias.data.fill_(0)
 
-    def _make_layer(self, channels, num_block, stride):
+    def build_layer(self, channels, num_block, stride):
 
         # Set downsample
         downsample = nn.Sequential(
@@ -116,11 +123,6 @@ class ResNetModel(pl.LightningModule):
         metrics = {'val_acc': acc, 'val_loss': loss}
         self.log_dict(metrics)
         return metrics
-
-    def test_step(self, batch, batch_idx):
-        metrics = self.validation_step(batch, batch_idx)
-        metrics = {'test_acc': metrics['val_acc'], 'test_loss': metrics['val_loss']}
-        self.log_dict(metrics)
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)
