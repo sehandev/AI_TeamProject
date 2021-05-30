@@ -85,7 +85,6 @@ def get_preprocess_function(model_name, is_crop=True):
             transforms.CenterCrop(224),
             transforms.Grayscale(1),
             transforms.ToTensor(),
-            transforms.Normalize((0.485), (0.229)),
         ])
     else:
         print('ERROR : No implemented model')

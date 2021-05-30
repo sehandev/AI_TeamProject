@@ -43,7 +43,7 @@ def open_image(class_name, index, preprocess):
     return image
 
 
-def test(model_name):
+def test(model_name, is_crop):
     """model을 테스트하는 함수
     
     Parameters
@@ -59,7 +59,7 @@ def test(model_name):
     model.eval()
 
     # 적용할 전처리 함수 불러오기
-    preprocess = helper.get_preprocess_function(model_name, is_crop=True)
+    preprocess = helper.get_preprocess_function(model_name, is_crop=is_crop)
 
     correct_count = 0  # 전체에서 맞춘 개수
     for class_name in ['cheetah', 'jaguar', 'leopard']:
@@ -98,6 +98,13 @@ def test(model_name):
 
 
 if __name__ == '__main__':
-    for model_name in ['LSTM', 'GRU', 'ResNet', 'VGGNet', 'GoogLeNet']:
-        print(f'== {model_name} ==')
-        test(model_name)
+    test_dict = {
+        'LSTM': True,
+        'GRU': True,
+        'ResNet': True,
+        'VGGNet': False,
+        'GoogLeNet': True,
+    }
+    for model_name in test_dict:
+        print(f'\n== {model_name} ==')
+        test(model_name, test_dict[model_name])

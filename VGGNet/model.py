@@ -56,7 +56,7 @@ class VGGNet(pl.LightningModule):
             nn.ReLU(inplace=True),
             nn.Linear(fc_layer_hidden2, num_classes)
         )
-        self.fc_layer.apply(init_weigths)  # 가중치 초기화
+        self.fc_layer.apply(init_weights)  # 가중치 초기화
 
     # conv layer 생성 함수
     def make_block(self, input_size, output_size, num_loop):
