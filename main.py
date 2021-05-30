@@ -103,7 +103,7 @@ def run_tune(model_name):
     # hyper-parameter tuning을 위한 변수를 지정한 dict
     tune_config = {
         'seed': tune.randint(0, 1000),  # random seed : 0 이상 1000 미만의 랜덤한 정수값
-        'lr': tune.uniform(1e-4, 1e-5),  # learning rate : 0.0001부터 0.00001 사이의 랜덤한 실수값
+        'lr': tune.loguniform(1e-3, 1e-9),  # learning rate : 1e-3부터 1e-9 사이의 랜덤한 실수값
         'num_epochs': 50,  # epoch : 50
         'batch_size': tune.randint(8, 21),  # 8 이상 21 미만의 랜덤한 정수값
     }
