@@ -15,6 +15,8 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 
+# https://github.com/python-engineer/pytorch-examples/blob/master/pytorch-lightning/lightning.py
+# 위 링크에서 pytorch lightning의 전체적인 구조를 참고, 함수 내부를 변경하여 VGG 모델에 적용
 class VGGNet(pl.LightningModule):
     # num_layers=16/19, input_size=3(RGB channel#), output_size=64
     # num_classes=3(cheetah, leopard, jaguar), learning_rate = lr
@@ -45,13 +47,14 @@ class VGGNet(pl.LightningModule):
         self.conv_layer.apply(init_weights)  # init weights
 
         # fully connected layer
-        fc_layer_hidden = 1024
+        fc_layer_hidden1 = 2024
+        fc_layer_hidden2 = 1024
         self.fc_layer = nn.Sequential(
-            nn.Linear(self.output_size * 7 * 7, fc_layer_hidden * 2),  # 1차원 벡터로 flatten
+            nn.Linear(self.output_size * 7 * 7, fc_layer_hidden1),  # 1차원 벡터로 flatten
             nn.ReLU(inplace=True),
-            nn.Linear(fc_layer_hidden * 2, fc_layer_hidden),
+            nn.Linear(fc_layer_hidden1, fc_layer_hidden2),
             nn.ReLU(inplace=True),
-            nn.Linear(fc_layer_hidden, num_classes)
+            nn.Linear(fc_layer_hidden2, num_classes)
         )
         self.fc_layer.apply(init_weigths)  # 가중치 초기화
 
@@ -78,7 +81,6 @@ class VGGNet(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch  # y는 label값
         y_hat = self(x)  # y_hat은 해당 모델로 예상한 결과값
-        y_hat = F.softmax(y_hat, dim=1)  # 3개 이상의 분류 모델에는 softmax가 좋다
         loss = self.loss(y_hat, y)  # 정해진 label과 prediction값 비교
         return loss
 
@@ -87,7 +89,7 @@ class VGGNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        y_hat = F.softmax(y_hatd, dim=1)  # dim=1로 두번째 차원에 적용
+        y_hat = F.softmax(y_hatd, dim=1)  # 3개 이상의 분류 모델에는 softmax가 좋다. dim=1로 두번째 차원에 적용
         loss = self.loss(y_hat, y)
         acc = FM.accuracy(y_hat, y)  # 정확도 측정
 
