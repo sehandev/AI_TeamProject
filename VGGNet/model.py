@@ -96,17 +96,6 @@ class VGGNet(pl.LightningModule):
         metrics = {'val_acc': acc, 'val_loss': loss}
         self.log_dict(metrics)  # log_dict로 key: value의 딕셔너리 저장
 
-    # train과 별개의 test data로 정확도 측정
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
-        loss = self.loss(y_hat, y)
-        acc = FM.accuracy(y_hat, y)
-
-        metrics = {'test_acc': acc, 'test_loss': loss}
-        self.log_dict(metrics)
-
     # SGD 대신 AdamW 사용(loss값 변화 증가)
     def configure_optimizers(self):
         # weight decay 은 가중치 감쇠값. default 는 0이다.
