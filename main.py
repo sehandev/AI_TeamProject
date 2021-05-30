@@ -82,6 +82,7 @@ def tune_model(tune_config, checkpoint_dir=None, model_name=None):
 
     # random seed 고정
     pl.seed_everything(tune_config['seed'], workers=True)
+    helper.force_seed(config.SEED)
 
     # model 불러오기
     model = helper.get_model(model_name, learning_rate=tune_config['lr'])
@@ -143,6 +144,7 @@ def train_model(model_name):
 
     # random seed 고정
     pl.seed_everything(config.SEED, workers=True)
+    helper.force_seed(config.SEED)
 
     # model 불러오기
     model = helper.get_model(model_name, learning_rate=config.LEARNING_RATE)

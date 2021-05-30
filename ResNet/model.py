@@ -109,15 +109,14 @@ class ResNet(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
+        y_hat = F.softmax(y_hat, dim=1)
         acc = FM.accuracy(y_hat, y)
 
         metrics = {'val_acc': acc, 'val_loss': loss}

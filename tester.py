@@ -98,7 +98,6 @@ def test(model_name):
 
 
 if __name__ == '__main__':
-    # LSTM, GRU, ResNet, VGGNet, GoogLeNet
-    model_name = 'ResNet'
-
-    test(model_name)
+    for model_name in ['LSTM', 'GRU', 'ResNet', 'VGGNet', 'GoogLeNet']:
+        print(f'== {model_name} ==')
+        test(model_name)

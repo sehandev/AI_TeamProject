@@ -80,6 +80,7 @@ class CustomImagenetDataModule(pl.LightningDataModule):
         self.model_name = model_name
 
     def prepare_data(self):
+        # data를 download하는 등 사전작업이 필요할 때 사용하는 함수
         pass
 
     def setup(self, stage=None):
@@ -90,12 +91,15 @@ class CustomImagenetDataModule(pl.LightningDataModule):
         self.test_dataset = CustomImagenetDataset(train=False, model_name=self.model_name)
 
     def train_dataloader(self):
+        # training dataset을 사용하는 training dataloader를 불러오는 함수
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
     def val_dataloader(self):
+        # validation dataset을 사용하는 validation dataloader를 불러오는 함수
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
     def test_dataloader(self):
+        # test dataset을 사용하는 test dataloader를 불러오는 함수
         return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=config.NUM_WORKERS, persistent_workers=True)
 
 

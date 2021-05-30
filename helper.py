@@ -13,7 +13,7 @@ import numpy as np
 import config
 
 # Model
-from resnet.model import ResNet
+from ResNet.model import ResNet
 from LSTM.model import LSTMModel
 from GRU.model import GRUModel
 from VGGNet.model import VGGNet
