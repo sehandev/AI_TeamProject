@@ -114,17 +114,6 @@ class GoogLeNet(pl.LightningModule):
         metrics = {'val_acc': acc, 'val_loss': loss}
         self.log_dict(metrics)
 
-    # records accuracy and cross entropy loss
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
-        loss = self.loss(y_hat, y)
-        acc = FM.accuracy(y_hat, y)
-
-        metrics = {'test_acc': acc, 'test_loss': loss}
-        self.log_dict(metrics)
-
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.0001)
 
@@ -174,7 +163,6 @@ class Aux(nn.Module):
 
     def forward(self, x):
         #The classifier from the third inception module is called Aux1, and the sixth is called Aux2.
-        
         # Aux1 : In ( N x 512 x 14 x 14 ) ->
         # Aux2 : In ( N x 528 x 14 x 14 ) ->
         x = F.adaptive_avg_pool2d(x, (4, 4))
