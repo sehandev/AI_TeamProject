@@ -58,7 +58,6 @@ class LSTMModel(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
         loss = self.loss(y_hat, y)
         return loss
 
@@ -71,17 +70,6 @@ class LSTMModel(pl.LightningModule):
         acc = FM.accuracy(y_hat, y) # logits에서 최댓값인 라벨이 실제 라벨과 일치하는 비율을 구해줌
 
         metrics = {'val_acc': acc, 'val_loss': loss}
-        self.log_dict(metrics)
-
-    # 정확도와 cross entropy loss를 기록하는 함수
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        y_hat = F.softmax(y_hat, dim=1)
-        loss = self.loss(y_hat, y)
-        acc = FM.accuracy(y_hat, y)
-
-        metrics = {'test_acc': acc, 'test_loss': loss}
         self.log_dict(metrics)
 
     def configure_optimizers(self):
