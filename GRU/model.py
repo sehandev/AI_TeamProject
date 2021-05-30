@@ -27,8 +27,6 @@ class GRUModel(pl.LightningModule):
         self.lr = learning_rate
         # Loss function
         self.loss = F.cross_entropy
-        if torch.cuda.is_available():
-            pass
 
     # forward propagation function
     def forward(self, x):
