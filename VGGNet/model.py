@@ -89,8 +89,8 @@ class VGGNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        y_hat = F.softmax(y_hatd, dim=1)  # 3개 이상의 분류 모델에는 softmax가 좋다. dim=1로 두번째 차원에 적용
         loss = self.loss(y_hat, y)
+        y_hat = F.softmax(y_hatd, dim=1)  # 3개 이상의 분류 모델에는 softmax가 좋다. dim=1로 두번째 차원에 적용
         acc = FM.accuracy(y_hat, y)  # 정확도 측정
 
         metrics = {'val_acc': acc, 'val_loss': loss}
