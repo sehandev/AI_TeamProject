@@ -1,11 +1,13 @@
 # Standard
 import os
+import random
 
 # PIP
 import torch
 import torchvision.transforms as transforms
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
+import numpy as np
 
 # Custom
 import config
@@ -25,6 +27,7 @@ CLASS_IDS = {
 }
 
 CLASS_NAME_LIST = list(CLASS_IDS.keys())
+CLASS_ID_LIST = list(CLASS_IDS.values())
 
 
 def get_class_id(class_name):
@@ -117,3 +120,13 @@ def get_model(model_name, learning_rate):
         return
 
     return model
+
+
+def force_seed(random_seed):
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(random_seed)
+    random.seed(random_seed)
