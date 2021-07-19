@@ -7,4 +7,11 @@
 
 Data : ImageNet dataset에서 필요한 class의 data만 따로 추출
 
-사용 기술 : pytorch, pytorch-lightning, ray[tune]
+사용 기술
+- Deep Learning
+  1. pytorch
+  2. pytorch-lightning
+  3. ray[tune]
+- DevOps
+  1. Docker
+  2. Docker Compose
